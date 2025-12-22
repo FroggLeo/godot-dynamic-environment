@@ -1,0 +1,31 @@
+[gd_scene load_steps=6 format=3 uid="uid://cyshp33ssalay"]
+
+[ext_resource type="Script" uid="uid://klhs5laxanpv" path="res://environment_system.gd" id="1_xq3th"]
+[ext_resource type="Shader" uid="uid://dr45i5h2bainv" path="res://environment/environment_system.gdshader" id="2_6u5e0"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_6u5e0"]
+shader = ExtResource("2_6u5e0")
+
+[sub_resource type="Sky" id="Sky_i61be"]
+sky_material = SubResource("ShaderMaterial_6u5e0")
+
+[sub_resource type="Environment" id="Environment_xdsv0"]
+background_mode = 2
+sky = SubResource("Sky_i61be")
+
+[node name="EnvironmentSystem" type="Node3D"]
+script = ExtResource("1_xq3th")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_xdsv0")
+
+[node name="Sun" type="Node3D" parent="."]
+
+[node name="SunLight" type="DirectionalLight3D" parent="Sun"]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 1, 0)
+
+[node name="Moon" type="Node3D" parent="."]
+
+[node name="MoonLight" type="DirectionalLight3D" parent="Moon"]
+transform = Transform3D(-1, -3.821371e-15, -8.742278e-08, -8.742278e-08, 4.371139e-08, 1, 0, 1, -4.371139e-08, 0, 1, 0)
+light_energy = 0.1
