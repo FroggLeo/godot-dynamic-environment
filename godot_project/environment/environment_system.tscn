@@ -1,14 +1,12 @@
 [gd_scene load_steps=6 format=3 uid="uid://cyshp33ssalay"]
 
 [ext_resource type="Script" uid="uid://klhs5laxanpv" path="res://environment_system.gd" id="1_xq3th"]
-[ext_resource type="Shader" uid="uid://dr45i5h2bainv" path="res://environment/environment_system.gdshader" id="2_6u5e0"]
+[ext_resource type="Shader" uid="uid://du030jxk7hvqn" path="res://environment/realistic.gdshader" id="2_6u5e0"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6u5e0"]
 shader = ExtResource("2_6u5e0")
-shader_parameter/sun_size = 0.0
-shader_parameter/sun_glow_size = 0.0
-shader_parameter/zenith_size = 0.0
-shader_parameter/horizon_size = 0.0
+shader_parameter/zenith_color = Color(1.8867255e-05, 0.65903956, 0.9863855, 1)
+shader_parameter/horizon_color = Color(0.6901405, 0.86410934, 1, 1)
 
 [sub_resource type="Sky" id="Sky_i61be"]
 sky_material = SubResource("ShaderMaterial_6u5e0")
@@ -19,6 +17,7 @@ sky = SubResource("Sky_i61be")
 
 [node name="EnvironmentSystem" type="Node3D"]
 script = ExtResource("1_xq3th")
+time = 0.9290128444460752
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_xdsv0")
