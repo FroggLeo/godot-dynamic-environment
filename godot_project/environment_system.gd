@@ -1,6 +1,11 @@
 @tool
 extends Node3D
 
+# +x / -x
+# east / west 
+# +z / -z
+# north / south
+
 @export var paused: bool = false
 ## length of one day in seconds
 @export var day_length: float = 120
@@ -10,10 +15,12 @@ extends Node3D
 @export var axial_tilt: float = 23.5:
 	set (value):
 		axial_tilt = value
+		_update_sun_moon()
 ## latitude / base tilt
 @export_range(-90,90,0.01) var latitude: float = 34.05:
 	set (value):
 		latitude = value
+		_update_sun_moon()
 
 @export_range(0,1,0.001) var time: float = 0:
 	set (value):
@@ -37,6 +44,7 @@ func _process(delta: float) -> void:
 	_update_sun_moon()
 	
 
+# update the time
 func _update_time(delta: float) -> void:
 	time += delta / day_length
 	if time >= 1.0:
@@ -44,13 +52,13 @@ func _update_time(delta: float) -> void:
 
 func _update_sun_moon() -> void:
 	var angle := time * TAU
-	
-	var elevation_angle := angle - PI * 0.5
-	
-	Sun.rotation = Vector3(
-		elevation_angle + deg_to_rad(latitude),
-		deg_to_rad(latitude),
-		0.0
+	# set the sun rotation
+	Sun.global_rotation = Vector3(
+		angle,
+		0.0,
+		deg_to_rad(latitude)
 	)
 	# add pi to set to exactly opposite
 	Moon.rotation = Sun.rotation + Vector3(PI, 0.0, 0.0)
+	print(Sun.global_rotation_degrees)
+	print(SunLight.global_position)

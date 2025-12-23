@@ -6,4 +6,4 @@
 
 [node name="EnvironmentSystem" parent="." instance=ExtResource("1_6xmxd")]
 day_length = 10.0
-time = 0.9216715549364859
+time = 0.7683035666668334
