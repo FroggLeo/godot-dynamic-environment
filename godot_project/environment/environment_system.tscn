@@ -5,14 +5,6 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6u5e0"]
 shader = ExtResource("2_6u5e0")
-shader_parameter/zenith_color = Color(1.8867255e-05, 0.65903956, 0.9863855, 1)
-shader_parameter/horizon_color = Color(0.6901405, 0.86410934, 1, 1)
-shader_parameter/ground_color = Color(0.13, 0.08709999, 0.08709999, 1)
-shader_parameter/sun_color = Color(1, 0.8904391, 0.8000571, 1)
-shader_parameter/horizon_size = 0.01
-shader_parameter/horizon_fog_size = 0.215
-shader_parameter/sun_size = 0.02
-shader_parameter/sun_glow_size = 48.4
 
 [sub_resource type="Sky" id="Sky_i61be"]
 sky_material = SubResource("ShaderMaterial_6u5e0")
@@ -23,7 +15,7 @@ sky = SubResource("Sky_i61be")
 
 [node name="EnvironmentSystem" type="Node3D"]
 script = ExtResource("1_xq3th")
-time = 0.15557101945105542
+time = 0.6602777138968726
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_xdsv0")
