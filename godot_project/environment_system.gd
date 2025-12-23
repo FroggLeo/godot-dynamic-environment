@@ -60,5 +60,9 @@ func _update_sun_moon() -> void:
 	)
 	# add pi to set to exactly opposite
 	Moon.rotation = Sun.rotation + Vector3(PI, 0.0, 0.0)
-	print(Sun.global_rotation_degrees)
-	print(SunLight.global_position)
+	
+	var sun_dir := _get_light_dir(SunLight)
+	var moon_dir := _get_light_dir(MoonLight)
+	
+func _get_light_dir(light: DirectionalLight3D) -> Vector3:
+	return (-light.global_transform.basis.z).normalized()
