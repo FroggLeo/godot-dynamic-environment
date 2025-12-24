@@ -5,14 +5,14 @@ const float INFINITY = 1.0 / 0.0;
 
 // the planet
 const float PLANET_RADIUS = 6371000.0; // radius of the planet, duh
-const vec3 PLANET_CENTER = vec3(0.0, -PLANET_RADIUS, 0.0); // assumes y=0 is planet surface/sea level
+const vec3 PLANET_CENTER = vec3(0.0, -PLANET_RADIUS-0.250000015, 0.0); // assumes y=0 is planet surface/sea level
 const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this one uses the karman line
 // atmosphere
 // rayleigh
-const vec3 RAYLEIGH_BETA = vec3(5.8e-3, 13.5e-3, 33.1e-3); // correct ratios, values not true
+const vec3 RAYLEIGH_BETA = vec3(5.8e-6, 13.5e-6, 33.1e-6); // correct ratios, values not true
 const float RAYLEIGH_SCALE_HEIGHT = 8300.0;
 // mie
-const vec3 MIE_BETA = vec3(2.0e-3);
+const vec3 MIE_BETA = vec3(2.0e-6);
 const float MIE_SCALE_HEIGHT = 1200.0;
 uniform float mie_factor = 0.85;
 
@@ -20,6 +20,8 @@ uniform float mie_factor = 0.85;
 // how does one explain their purpose
 uniform int process_steps = 8;
 uniform int sunlight_steps = 4;
+
+uniform float exposure = 30.0;
 
 // general line-sphere intesection formula
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
@@ -219,6 +221,9 @@ float t0, float t1, int view_steps, int sun_steps) {
 		// second transmittance
 		// the factor loss of the sunlight from top of atmosphere to the scatter point
 		vec2 sunlight_segment = get_planet_intersection(point, sun_direction);
+		if (sunlight_segment.x < 0.0) {
+			continue;
+		}
 		float scatter_t0 = max(sunlight_segment.x, 0.0);
 		float scatter_t1 = sunlight_segment.y;
 		vec2 sunlight_optical_depth = get_optical_depth(point, sun_direction, scatter_t0, scatter_t1, sun_steps);
@@ -268,5 +273,5 @@ void sky() {
 	if (LIGHT1_ENABLED) { moon_dir = normalize(LIGHT1_DIRECTION); }
 	// get the sky radiance
 	c = get_sky_radiance(view_dir, sun_dir);
-	COLOR = c;
+	COLOR = c * exposure;
 }
