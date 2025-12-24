@@ -6,8 +6,8 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6u5e0"]
 shader = ExtResource("2_6u5e0")
 shader_parameter/mie_factor = 0.85
-shader_parameter/process_steps = 8
-shader_parameter/sunlight_steps = 4
+shader_parameter/view_ray_steps = 8
+shader_parameter/sun_ray_steps = 4
 shader_parameter/exposure = 50.0
 
 [sub_resource type="Sky" id="Sky_i61be"]

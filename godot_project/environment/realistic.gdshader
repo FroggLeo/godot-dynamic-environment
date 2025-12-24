@@ -9,17 +9,21 @@ const vec3 PLANET_CENTER = vec3(0.0, -PLANET_RADIUS-0.250000015, 0.0); // assume
 const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this one uses the karman line
 // atmosphere
 // rayleigh
-const vec3 RAYLEIGH_BETA = vec3(5.8e-6, 13.5e-6, 33.1e-6); // correct ratios, values not true
+const vec3 RAYLEIGH_BETA = vec3(5.802, 13.558, 33.100) * 1e-6; // correct ratios, values not true
 const float RAYLEIGH_SCALE_HEIGHT = 8300.0;
 // mie
-const vec3 MIE_BETA = vec3(2.0e-6);
+const vec3 MIE_BETA = vec3(3.996) * 1e-6;
 const float MIE_SCALE_HEIGHT = 1200.0;
 uniform float mie_factor = 0.85;
+// ozone
+const vec3 OZONE_BETA = vec3(0.650, 1.881, 0.085) * 1e-6;
+const float OZONE_SCALE_HEIGHT = 7000.0;
+const float OZONE_PEAK_ALTITUDE = 20000.0;
 
-// what would be good variable names for these?
-// how does one explain their purpose
-uniform int process_steps = 8;
-uniform int sunlight_steps = 4;
+// samples along the camera to the pixel ray
+uniform int view_ray_steps = 8;
+// sample along the sample to sun ray
+uniform int sun_ray_steps = 4;
 
 uniform float exposure = 30.0;
 
@@ -85,7 +89,7 @@ vec2 get_planet_intersection(vec3 ray_origin, vec3 ray_direction) {
 	// already checked atm.y, all good
 	// t1 could either be ground contact or atmosphere exit
 	// the first one to reach is considered
-	float t1 = atm.y;
+	float t1 = max(atm.y, 0.0);
 	// consider ground intersection
 	vec2 gnd = get_ground_intersection(ray_origin, ray_direction);
 	if (gnd.x > 0.0) {
@@ -115,6 +119,15 @@ float get_rayleigh_density(float altitude) {
 // same thing for mie
 float get_mie_density(float altitude) {
 	return exp(-max(altitude, 0.0) / MIE_SCALE_HEIGHT);
+}
+
+// ozone is a bit different since it's only near the top
+float get_ozone_density(float altitude) {
+	// using the chapman theory
+	// taken from here
+	// https://en.wikipedia.org/wiki/Chapman_function
+	float x = (altitude - OZONE_PEAK_ALTITUDE) / OZONE_SCALE_HEIGHT;
+	return exp(-x - exp(-x));
 }
 
 // phase is light scatter
@@ -221,13 +234,13 @@ float t0, float t1, int view_steps, int sun_steps) {
 		// second transmittance
 		// the factor loss of the sunlight from top of atmosphere to the scatter point
 		vec2 sunlight_segment = get_planet_intersection(point, sun_direction);
-		if (sunlight_segment.x < 0.0) {
-			continue;
-		}
 		float scatter_t0 = max(sunlight_segment.x, 0.0);
 		float scatter_t1 = sunlight_segment.y;
-		vec2 sunlight_optical_depth = get_optical_depth(point, sun_direction, scatter_t0, scatter_t1, sun_steps);
-		vec3 sunlight_transmittance = get_ray_absorb(sunlight_optical_depth);
+		vec3 sunlight_transmittance = vec3(0.0);
+		if (sunlight_segment.x >= 0.0) {
+			vec2 sunlight_optical_depth = get_optical_depth(point, sun_direction, scatter_t0, scatter_t1, sun_steps);
+			sunlight_transmittance = get_ray_absorb(sunlight_optical_depth);
+		}
 		// the amount of rgb light that gets redirected back into view per meter traveled at this point
 		vec3 scatter_coefficient =
 			RAYLEIGH_BETA * rayleigh_density * rayleigh_phase +
@@ -253,7 +266,7 @@ vec3 get_sky_radiance(vec3 view_dir, vec3 sun_dir) {
 		return vec3(0.0);
 	}
 	// the ultimate call
-	vec3 skylight = get_ray_scatter(ray_origin, view_dir, sun_dir, view_segment.x, view_segment.y, process_steps, sunlight_steps);
+	vec3 skylight = get_ray_scatter(ray_origin, view_dir, sun_dir, view_segment.x, view_segment.y, view_ray_steps, sun_ray_steps);
 	return skylight;
 }
 
