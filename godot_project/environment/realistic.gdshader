@@ -14,6 +14,72 @@ const vec3 RAYLEIGH_BETA = vec3(
 	33.1e-3 // blue
 );
 
+// general line-sphere intesection formula
+// https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
+// why is it vec2??
+// are we mapping the sphere onto polar coordinates?
+vec2 sphere_intersection() {
+	return vec2(-1.0); // return -1 for no intersect
+}
+
+// the part of the ray that is actually inside the atmosphere
+// just calls sphere intersection with pre filled parameters
+vec2 atmosphere_intersection() {
+	return vec2(0.0);
+}
+
+// the height above/below sea level
+// distance from center - planet radius
+float altitude() {
+	return 0.0;
+}
+
+// what is density??
+// how dense the air is or how dense/powerful the scattering is?
+// is h altitude?
+// is there a formula someone made for this?
+float rayleigh_density(float h) {
+	return 0.0;
+}
+
+float mie_density(float h) {
+	return 0.0;
+}
+
+// phase is how the light is scattering, right?
+float rayleigh_phase(float mu) {
+	// rayleigh phase = 3/4 * (1 + cos^2(scattering angle))
+	// normalize by multiplying 1/4pi
+	// mu = cos(scattering angle) which is actually just dot(view_dir, sun_dir)
+	return (1.0 + mu * mu) * 3.0 / (16.0 * PI);
+}
+
+float mie_phase() {
+	return 0.0;
+}
+
+// why vec2?
+// vec2 to store TWO values!!! rayleigh and mie are the two vectors/values
+// vec3 is only needed if we are also doing ozone
+// calculates the optical depth value over the entire path of the ray?
+// so optical depth considers blocking of light
+// ohh so we do it in n steps to take many different samples
+// and then gets the average?
+vec2 optical_depth() {
+	return vec2(0.0);
+}
+
+// absorb light based on the optical depth of the air
+// what should it output?
+vec2 ray_absorb() {
+
+}
+
+// the final function?
+vec2 ray_scatter() {
+
+}
+
 // Called for every visible pixel in the sky background, as well as all pixels
 // in the radiance cubemap.
 void sky() {
@@ -30,10 +96,9 @@ void sky() {
 	if (LIGHT1_ENABLED) { moon_dir = normalize(LIGHT1_DIRECTION); }
 	// scattering
 	// super simple air mass approximation, although not very accurate near horizon/for twilight
-	float air_mass = 1.0/max(0.05, abs(dot(view_dir, top)));
-	vec3 optical_depth = RAYLEIGH_BETA * air_mass;
+
 	vec3 transmittance = exp(-optical_depth); // beer lambert law, transmittance = e^(-optical depth)
-	vec3 scattered = (vec3(1.0) - transmittance);
+	vec3 scattered = (vec3(1.0) - transmittance); // where did this come from??
 	c = scattered * vec3(1.0);
 	COLOR = c;
 }
