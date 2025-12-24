@@ -12,11 +12,14 @@ const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this on
 const vec3 RAYLEIGH_BETA = vec3(5.8e-3, 13.5e-3, 33.1e-3); // correct ratios, values not true
 const float RAYLEIGH_SCALE_HEIGHT = 8300.0;
 // mie
-const vec3 MIE_BETA = vec3(0.0);
+const vec3 MIE_BETA = vec3(2.0e-3);
 const float MIE_SCALE_HEIGHT = 1200.0;
 uniform float mie_factor = 0.85;
 
+// what would be good variable names for these?
+// how does one explain their purpose
 uniform int process_steps = 8;
+uniform int sunlight_steps = 4;
 
 // general line-sphere intesection formula
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
@@ -126,7 +129,8 @@ float get_mie_phase(float mu, float g) {
 	// probability of scattering = (1 / 4pi) * (1 - g^2)/(1 + g^2 - 2gcos(scattering angle))^3/2
 	// g is the asymmetry factor, or mie_factor
 	float g2 = g * g;
-	return (1.0 - g2) / (4.0 * PI * pow(1.0 + g2 - 2.0 * g * mu, 1.5));
+	float denominator_part = max(1e-3, 1.0 + g2 - 2.0 * g * mu);
+	return (1.0 - g2) / (4.0 * PI * pow(denominator_part, 1.5));
 }
 
 // optical depth
@@ -233,6 +237,21 @@ float t0, float t1, int view_steps, int sun_steps) {
 	return radiance;
 }
 
+// the final function...
+vec3 get_sky_radiance(vec3 view_dir, vec3 sun_dir) {
+	// ray starts at the camera
+	vec3 ray_origin = vec3(0.0);
+	// the actual segment that
+	vec2 view_segment = get_planet_intersection(ray_origin, view_dir);
+	// if the ray is invalid
+	if (view_segment.x < 0.0) {
+		return vec3(0.0);
+	}
+	// the ultimate call
+	vec3 skylight = get_ray_scatter(ray_origin, view_dir, sun_dir, view_segment.x, view_segment.y, process_steps, sunlight_steps);
+	return skylight;
+}
+
 // Called for every visible pixel in the sky background, as well as all pixels
 // in the radiance cubemap.
 void sky() {
@@ -247,6 +266,7 @@ void sky() {
 	if (LIGHT0_ENABLED) { sun_dir = normalize(LIGHT0_DIRECTION); }
 	vec3 moon_dir = top; // default to top
 	if (LIGHT1_ENABLED) { moon_dir = normalize(LIGHT1_DIRECTION); }
-	// some high level function to input the necessary stuff to call rayleigh and mie scattering
+	// get the sky radiance
+	c = get_sky_radiance(view_dir, sun_dir);
 	COLOR = c;
 }
