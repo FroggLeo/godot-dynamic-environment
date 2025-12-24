@@ -5,27 +5,35 @@ const float INFINITY = 1.0 / 0.0;
 
 // the planet
 const float PLANET_RADIUS = 6371000.0; // radius of the planet, duh
-const vec3 PLANET_CENTER = vec3(0.0, -PLANET_RADIUS-0.250000015-1000.0, 0.0); // assumes y=0 is planet surface/sea level
+const vec3 PLANET_CENTER = vec3(0.0, -PLANET_RADIUS-0.250000015, 0.0); // assumes y=0 is planet surface/sea level
 const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this one uses the karman line
 // atmosphere
 // rayleigh
+uniform float rayleigh_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
+uniform float rayleigh_scale_height: hint_range(1000.0, 20000.0, 50.0) = 8300.0;
 const vec3 RAYLEIGH_BETA = vec3(5.802, 13.558, 33.100) * 1e-6; // correct ratios, values not true
-const float RAYLEIGH_SCALE_HEIGHT = 8300.0;
 // mie
+uniform float mie_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
+uniform float mie_scale_height: hint_range(500.0, 15000.0, 50.0) = 1200.0;
+uniform float mie_g = 0.85;
 const vec3 MIE_BETA = vec3(3.996) * 1e-6;
-const float MIE_SCALE_HEIGHT = 1200.0;
-uniform float mie_factor = 0.85;
 // ozone
+uniform float ozone_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
+uniform float ozone_scale_height: hint_range(1000.0, 20000.0, 50.0) = 7000.0;
+uniform float ozone_peak_altitude: hint_range(1000.0, 50000.0, 100.0) = 20000.0;
 const vec3 OZONE_BETA = vec3(0.650, 1.881, 0.085) * 1e-6;
-const float OZONE_SCALE_HEIGHT = 7000.0;
-const float OZONE_PEAK_ALTITUDE = 20000.0;
 
 // samples along the camera to the pixel ray
+// high performance impact
+// performance / quality
 uniform int view_ray_min_steps = 6;
 uniform int view_ray_max_steps = 36;
 // sample along the sample to sun ray
-uniform int sun_ray_min_steps = 2;
+// best to leave the same, or there will be bands of differing light strengths
+uniform int sun_ray_min_steps = 3;
 uniform int sun_ray_max_steps = 3;
+// how extreme the curve
+// higher -> better performance & lower quality
 uniform float steps_curve_k = 10.0;
 
 uniform float exposure = 30.0;
@@ -117,12 +125,12 @@ float get_altitude(vec3 point) {
 // we are modeling the density using an equation and a scale height
 // general model: density = e^(-altitude / scale height)
 float get_rayleigh_density(float altitude) {
-	return exp(-max(altitude, 0.0) / RAYLEIGH_SCALE_HEIGHT);
+	return exp(-max(altitude, 0.0) / rayleigh_scale_height);
 }
 
 // same thing for mie
 float get_mie_density(float altitude) {
-	return exp(-max(altitude, 0.0) / MIE_SCALE_HEIGHT);
+	return exp(-max(altitude, 0.0) / mie_scale_height);
 }
 
 // ozone is a bit different since it's only near the top
@@ -130,7 +138,7 @@ float get_ozone_density(float altitude) {
 	// using the chapman theory
 	// taken from here
 	// https://en.wikipedia.org/wiki/Chapman_function
-	float x = (altitude - OZONE_PEAK_ALTITUDE) / OZONE_SCALE_HEIGHT;
+	float x = (altitude - ozone_peak_altitude) / ozone_scale_height;
 	return exp(-x - exp(-x));
 }
 
@@ -151,7 +159,7 @@ float get_rayleigh_phase(float mu) {
 float get_mie_phase(float mu, float g) {
 	// mie scattering using the henyey greenstein (HG) model
 	// probability of scattering = (1 / 4pi) * (1 - g^2)/(1 + g^2 - 2gcos(scattering angle))^3/2
-	// g is the asymmetry factor, or mie_factor
+	// g is the asymmetry factor, or mie_g
 	float g2 = g * g;
 	float denominator_part = max(1e-3, 1.0 + g2 - 2.0 * g * mu);
 	return (1.0 - g2) / (4.0 * PI * pow(denominator_part, 1.5));
@@ -213,6 +221,21 @@ vec3 get_ray_absorb(vec3 optical_depth) {
 	return exp(-(optical_depth.x * RAYLEIGH_BETA + optical_depth.y * MIE_BETA + optical_depth.z * OZONE_BETA));
 }
 
+// dims the side opposite of the sun
+// currently unused
+vec3 get_antisolar_absorb(vec3 view_dir, vec3 sun_dir) {
+	vec3 top = vec3(0.0,1.0,0.0);
+	// how close the sun is to the top
+	// zenith to horizon: 0..1
+	float sun_alt = 1.0 - clamp(dot(sun_dir, top) * 0.5 + 0.5, 0.0, 1.0);
+	// how opposite this ray is to the sun
+	// opposite to same: 0..1
+	float opposite = clamp(dot(view_dir, sun_dir) * 0.5 + 0.5, 0.0, 1.0);
+
+	vec3 antisolar_beta = vec3(0.85, 0.90, 0.95);
+	return antisolar_beta * exp(opposite);
+}
+
 // how much scattered light still reaches the camera
 // returns the amount of light you should add back in
 vec3 get_ray_scatter(vec3 ray_origin, vec3 ray_direction, vec3 sun_direction,
@@ -234,7 +257,7 @@ float t0, float t1, int view_steps, int sun_steps) {
 	float mu = clamp(dot(ray_direction, sun_direction), -1.0, 1.0);
 	// get the phases/scattering values
 	float rayleigh_phase = get_rayleigh_phase(mu);
-	float mie_phase = get_mie_phase(mu, mie_factor);
+	float mie_phase = get_mie_phase(mu, mie_g);
 	// calculate scattering
 	for (int i = 0; i < 64; i++) {
 		if (i >= view_steps) {break;}
