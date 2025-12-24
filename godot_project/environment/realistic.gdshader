@@ -16,6 +16,8 @@ const vec3 MIE_BETA = vec3(0.0);
 const float MIE_SCALE_HEIGHT = 1200.0;
 uniform float mie_factor = 0.85;
 
+uniform float process_steps;
+
 // general line-sphere intesection formula
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
 // vec2 because it is vec2(t0, t1)
@@ -98,9 +100,9 @@ float mie_phase(float mu, float g) {
 }
 
 // optical depth
-// calculates the amount of rayleigh air and mie haze a ray is passing through
-// taking n steps throughout its journey, interpolates the rest for a function
-// lastly adds them up to a sum / (approximation of) the integral of the function / the area below the function
+// calculates the total amount of rayleigh air and mie haze a ray is passing through
+// taking n steps throughout its journey, adds them up to a sum
+// or actually approximation of the integral of the function
 // does this calculation for both rayleigh and mie, so returns vec2
 vec2 optical_depth(vec3 ray_origin, vec3 ray_direction, float t0, float t1, int steps) {
 	// length of the ray that is inside the atmosphere
@@ -133,9 +135,12 @@ vec2 optical_depth(vec3 ray_origin, vec3 ray_direction, float t0, float t1, int 
 }
 
 // absorb light based on the optical depth of the air
-// what should it output?
-vec3 ray_absorb() {
-	return vec3(0.0);
+// returns how much of rgb should be absorbed
+vec3 ray_absorb(vec2 optical_depth) {
+	// modified beer lambert law
+	// transmittance = e^-(total optical depth)
+	// total optical depth = (rayleigh beta * rayleigh optical depth) + (mie beta * mie optical depth) + (ozone beta * ozone optical depth)
+	return exp(-(optical_depth.x * RAYLEIGH_BETA + optical_depth.y * MIE_BETA));
 }
 
 // the final function?
