@@ -16,10 +16,40 @@ const vec3 RAYLEIGH_BETA = vec3(
 
 // general line-sphere intesection formula
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
-// why is it vec2??
-// are we mapping the sphere onto polar coordinates?
-vec2 sphere_intersection() {
-	return vec2(-1.0); // return -1 for no intersect
+// vec2 because it is vec2(t0, t1)
+// t0 and t1 just being the time you enter/exit the sphere
+vec2 sphere_intersection(float sphere_radius, vec3 sphere_center, vec3 line_origin, vec3 line_direction) {
+	// the sphere
+	// x - points on the sphere
+	// c - center point
+	// r - radius of sphere
+
+	// the line
+	// x - points on the line
+	// o - origin of line
+	// d - distance from origin of line
+	// u - direction of line (vector)
+
+	// a = u * u = ||u||^2 = 1 (if normalized)
+	// *double absolute value squared is dot product: ||v||^2 = dot(v,v)
+	float a = dot(line_direction, line_direction);
+	// b = 2(u * (o - c)) = 2u(o - c)
+	// o - c = dot(o, c)
+	// why is u/line direction left out?
+	float b = 2.0*dot(line_origin, sphere_center);
+	// c = (o - c)(o - c) - r^2 = ||o - c||^2 - r^2 = dot(o - c, o - c) - r^2
+	vec3 o_c = line_origin - sphere_center;
+	float c = dot(o_c, o_c) - sphere_radius*sphere_radius;
+	// ad^2 + bd + c = 0
+	// d is just quadratic formula! how math!
+	// d = (-b +- sqrt(b^2-4ac)) / 2a
+	// currently only have b^2-4ac to determine how many points of intersection
+	float d = b*b - 4.0*a*c;
+	if (d < 0.0) { // no intersect
+		return vec2(-1.0); // return -1 for no intersect
+	}
+	// return the full calculated d, the +- and /2a for all values
+	return vec2(-b - d, -b + d) / (a * 2.0);
 }
 
 // the part of the ray that is actually inside the atmosphere
@@ -71,7 +101,7 @@ vec2 optical_depth() {
 
 // absorb light based on the optical depth of the air
 // what should it output?
-vec2 ray_absorb() {
+vec3 ray_absorb() {
 
 }
 
