@@ -16,7 +16,7 @@ sky = SubResource("Sky_i61be")
 
 [node name="EnvironmentSystem" type="Node3D"]
 script = ExtResource("1_xq3th")
-time = 0.6982099083517408
+time = 0.21835607224275835
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_xdsv0")

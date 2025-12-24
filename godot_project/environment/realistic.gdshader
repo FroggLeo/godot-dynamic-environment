@@ -65,8 +65,9 @@ vec2 ground_intersection(vec3 ray_origin, vec3 ray_direction) {
 
 // the height above/below sea level
 // distance from center - planet radius
-float altitude(vec3 player_pos) {
-	return length(player_pos - PLANET_CENTER) - PLANET_RADIUS;
+float altitude(vec3 point) {
+	// determined by a vec3 point
+	return length(point - PLANET_CENTER) - PLANET_RADIUS;
 }
 
 // density is how dense the air is or how dense/powerful the scattering is
@@ -96,15 +97,39 @@ float mie_phase(float mu, float g) {
 	return (1.0 - g2) / (4.0 * PI * pow(1.0 + g2 - 2.0 * g * mu, 1.5));
 }
 
-// why vec2?
-// vec2 to store TWO values!!! rayleigh and mie are the two vectors/values
-// vec3 is only needed if we are also doing ozone
-// calculates the optical depth value over the entire path of the ray?
-// so optical depth considers blocking of light
-// ohh so we do it in n steps to take many different samples
-// and then gets the average?
-vec2 optical_depth() {
-	return vec2(0.0);
+// optical depth
+// calculates the amount of rayleigh air and mie haze a ray is passing through
+// taking n steps throughout its journey, interpolates the rest for a function
+// lastly adds them up to a sum / (approximation of) the integral of the function / the area below the function
+// does this calculation for both rayleigh and mie, so returns vec2
+vec2 optical_depth(vec3 ray_origin, vec3 ray_direction, float t0, float t1, int steps) {
+	// length of the ray that is inside the atmosphere
+	float ray_length = t1 - t0;
+	// if the ray is invalid, negative or no length
+	if (ray_length <= 0.0) {
+		return vec2(0.0);
+	}
+	// total length / how many steps
+	float step_size = ray_length / float(steps);
+	// total depth to be added up
+	vec2 total_depth = vec2(0.0);
+	// start looooooooping
+	for (int i = 0; i < steps; i++) {
+		// sample each value at the middle
+		// find the x value, or time t to sample
+		float time = t0 + (0.5 + float(i)) * step_size;
+		// get the actual point location that we are sampling
+		vec3 point = ray_origin + ray_direction * time;
+		// get the altitude of the point to find density
+		float altitude = altitude(point);
+		// get the values of the rayleigh and mie
+		float rayleigh_density = rayleigh_density(altitude);
+		float mie_density = mie_density(altitude);
+		// first one is rayleigh, second is mie, third (if it exists) is ozone
+		// multiply by step size to approximate the integral
+		total_depth += vec2(rayleigh_density, mie_density) * step_size;
+	}
+	return total_depth;
 }
 
 // absorb light based on the optical depth of the air
