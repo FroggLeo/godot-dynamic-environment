@@ -60,9 +60,37 @@ vec2 get_atmosphere_intersection(vec3 ray_origin, vec3 ray_direction) {
 	return get_sphere_intersection(PLANET_RADIUS+ATMOSPHERE_HEIGHT, PLANET_CENTER, ray_origin, ray_direction);
 }
 
-// the place of the ray that intersects the ground
+// the place of the ray that intersects the ground / solid part of the planet
 vec2 get_ground_intersection(vec3 ray_origin, vec3 ray_direction) {
 	return get_sphere_intersection(PLANET_RADIUS, PLANET_CENTER, ray_origin, ray_direction);
+}
+
+// general planet intersection that considers only the segment that travels through the atmosphere
+// starts at atmosphere entry and ends at either atmosphere exit or ground hit
+vec2 get_planet_intersection(vec3 ray_origin, vec3 ray_direction) {
+	vec2 atm = get_atmosphere_intersection(ray_origin, ray_direction);
+	// if never intersected atmosphere or behind?
+	if (atm.y <= 0.0) {
+		return vec2(-1.0);
+	}
+	// if origin is inside atmosphere, it will result in negative t0
+	// just clamp it to 0 if that's the case
+	// note, t0 should always be somewhere in the atmosphere
+	float t0 = max(atm.x, 0.0);
+	// already checked atm.y, all good
+	// t1 could either be ground contact or atmosphere exit
+	// the first one to reach is considered
+	float t1 = atm.y;
+	// consider ground intersection
+	vec2 gnd = get_ground_intersection(ray_origin, ray_direction);
+	if (gnd.x > 0.0) {
+		t1 = min(t1, gnd.x);
+	}
+	// extra check just in case, gets rid of invalid ray segments
+	if (t1 < t0) {
+		return vec2(-1.0);
+	}
+	return vec2(t0, t1);
 }
 
 // the height above/below sea level
@@ -79,6 +107,7 @@ float get_rayleigh_density(float altitude) {
 	return exp(-max(altitude, 0.0) / RAYLEIGH_SCALE_HEIGHT);
 }
 
+// same thing for mie
 float get_mie_density(float altitude) {
 	return exp(-max(altitude, 0.0) / MIE_SCALE_HEIGHT);
 }
@@ -185,7 +214,7 @@ float t0, float t1, int view_steps, int sun_steps) {
 		vec3 view_transmittance = get_ray_absorb(view_optical_depth);
 		// second transmittance
 		// the factor loss of the sunlight from top of atmosphere to the scatter point
-		vec2 sunlight_segment = get_atmosphere_intersection(point, sun_direction);
+		vec2 sunlight_segment = get_planet_intersection(point, sun_direction);
 		float scatter_t0 = max(sunlight_segment.x, 0.0);
 		float scatter_t1 = sunlight_segment.y;
 		vec2 sunlight_optical_depth = get_optical_depth(point, sun_direction, scatter_t0, scatter_t1, sun_steps);
