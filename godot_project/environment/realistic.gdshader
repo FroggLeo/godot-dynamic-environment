@@ -21,9 +21,12 @@ const float OZONE_SCALE_HEIGHT = 7000.0;
 const float OZONE_PEAK_ALTITUDE = 20000.0;
 
 // samples along the camera to the pixel ray
-uniform int view_ray_steps = 8;
+uniform int view_ray_min_steps = 6;
+uniform int view_ray_max_steps = 48;
 // sample along the sample to sun ray
-uniform int sun_ray_steps = 4;
+uniform int sun_ray_min_steps = 2;
+uniform int sun_ray_max_steps = 6;
+uniform float steps_curve_k = 10.0;
 
 uniform float exposure = 30.0;
 
@@ -130,6 +133,11 @@ float get_ozone_density(float altitude) {
 	return exp(-x - exp(-x));
 }
 
+// overall function for all 3 densities
+vec3 get_atmosphere_density(float altitude) {
+	return vec3(get_rayleigh_density(altitude), get_mie_density(altitude), get_ozone_density(altitude));
+}
+
 // phase is light scatter
 // how likely the scattered light will be in the direction of the camera
 float get_rayleigh_phase(float mu) {
@@ -148,22 +156,36 @@ float get_mie_phase(float mu, float g) {
 	return (1.0 - g2) / (4.0 * PI * pow(denominator_part, 1.5));
 }
 
+// there is exponentially less high steps than low steps
+// as the varying vector increases, the amount of steps exponentially increases
+int get_exp_steps(float mu, int low_steps, int high_steps) {
+	// get the horizon factor so that zenith is 0 and horizon is 1
+	float horizon_factor = 1.0 - abs(mu);
+	// how the two steps values are mixed
+	float mix_factor = pow(horizon_factor, steps_curve_k);
+	// get the smooth float version of the steps
+	float steps_float = mix(float(low_steps), float(high_steps), mix_factor);
+	// round up or down properly
+	int steps = int(floor(steps_float + 0.5));
+	return steps;
+}
+
 // optical depth
 // calculates the total amount of rayleigh air and mie haze a ray is passing through
 // taking n steps throughout its journey, adds them up to a sum
 // or actually approximation of the integral of the function
 // does this calculation for both rayleigh and mie, so returns vec2
-vec2 get_optical_depth(vec3 ray_origin, vec3 ray_direction, float t0, float t1, int steps) {
+vec3 get_optical_depth(vec3 ray_origin, vec3 ray_direction, float t0, float t1, int steps) {
 	// length of the ray that is inside the atmosphere
 	float ray_length = t1 - t0;
 	// if the ray is invalid, negative or no length
 	if (ray_length <= 0.0) {
-		return vec2(0.0);
+		return vec3(0.0);
 	}
 	// total length / how many steps
 	float step_size = ray_length / float(steps);
 	// total depth to be added up
-	vec2 total_depth = vec2(0.0);
+	vec3 total_depth = vec3(0.0);
 	// start looooooooping
 	for (int i = 0; i < 64; i++) {
 		if (i >= steps) {break;}
@@ -174,23 +196,20 @@ vec2 get_optical_depth(vec3 ray_origin, vec3 ray_direction, float t0, float t1, 
 		vec3 point = ray_origin + ray_direction * time;
 		// get the altitude of the point to find density
 		float altitude = get_altitude(point);
-		// get the values of the rayleigh and mie
-		float rayleigh_density = get_rayleigh_density(altitude);
-		float mie_density = get_mie_density(altitude);
-		// first one is rayleigh, second is mie, third (if it exists) is ozone
+		// first one is rayleigh, second is mie, third is ozone
 		// multiply by step size to approximate the integral
-		total_depth += vec2(rayleigh_density, mie_density) * step_size;
+		total_depth += get_atmosphere_density(altitude) * step_size;
 	}
 	return total_depth;
 }
 
 // absorb light based on the optical depth of the air
 // returns the factor of rgb that are left
-vec3 get_ray_absorb(vec2 optical_depth) {
+vec3 get_ray_absorb(vec3 optical_depth) {
 	// modified beer lambert law
 	// transmittance = e^-(total optical depth)
 	// total optical depth = (rayleigh beta * rayleigh optical depth) + (mie beta * mie optical depth) + (ozone beta * ozone optical depth)
-	return exp(-(optical_depth.x * RAYLEIGH_BETA + optical_depth.y * MIE_BETA));
+	return exp(-(optical_depth.x * RAYLEIGH_BETA + optical_depth.y * MIE_BETA + optical_depth.z * OZONE_BETA));
 }
 
 // how much scattered light still reaches the camera
@@ -205,19 +224,16 @@ float t0, float t1, int view_steps, int sun_steps) {
 	}
 	// get the size of the step
 	float step_size = ray_length / float(view_steps);
-
 	// the optical depth, accumulates over time so that it can calculate
 	// the amount of optical depth that goes from the camera to the current scatter point
-	vec2 view_optical_depth = vec2(0.0);
+	vec3 view_optical_depth = vec3(0.0);
 	// the amount of skylight that got scattered but still reached the camera
 	vec3 radiance = vec3(0.0);
-
 	// the cos(scattering angle) referenced in the phase functions
 	float mu = clamp(dot(ray_direction, sun_direction), -1.0, 1.0);
-
+	// get the phases/scattering values
 	float rayleigh_phase = get_rayleigh_phase(mu);
 	float mie_phase = get_mie_phase(mu, mie_factor);
-
 	// calculate scattering
 	for (int i = 0; i < 64; i++) {
 		if (i >= view_steps) {break;}
@@ -228,8 +244,8 @@ float t0, float t1, int view_steps, int sun_steps) {
 		vec3 point = ray_origin + ray_direction * time;
 		float altitude = get_altitude(point);
 		float rayleigh_density = get_rayleigh_density(altitude);
-		float mie_density = get_mie_density(altitude);
-		view_optical_depth += vec2(rayleigh_density, mie_density) * step_size;
+		vec3 atmosphere_density = get_atmosphere_density(altitude);
+		view_optical_depth += atmosphere_density * step_size;
 		vec3 view_transmittance = get_ray_absorb(view_optical_depth);
 		// second transmittance
 		// the factor loss of the sunlight from top of atmosphere to the scatter point
@@ -238,13 +254,13 @@ float t0, float t1, int view_steps, int sun_steps) {
 		float scatter_t1 = sunlight_segment.y;
 		vec3 sunlight_transmittance = vec3(0.0);
 		if (sunlight_segment.x >= 0.0) {
-			vec2 sunlight_optical_depth = get_optical_depth(point, sun_direction, scatter_t0, scatter_t1, sun_steps);
+			vec3 sunlight_optical_depth = get_optical_depth(point, sun_direction, scatter_t0, scatter_t1, sun_steps);
 			sunlight_transmittance = get_ray_absorb(sunlight_optical_depth);
 		}
 		// the amount of rgb light that gets redirected back into view per meter traveled at this point
 		vec3 scatter_coefficient =
-			RAYLEIGH_BETA * rayleigh_density * rayleigh_phase +
-			MIE_BETA * mie_density * mie_phase;
+			RAYLEIGH_BETA * atmosphere_density.x * rayleigh_phase +
+			MIE_BETA * atmosphere_density.y * mie_phase;
 		// how much more the sky glows from this segment is added to the total
 		// size * scatter coefficient is the x * y for integral estimation
 		// then multiply that area (now the amount of light) by how much makes it through the two stages
@@ -259,14 +275,21 @@ float t0, float t1, int view_steps, int sun_steps) {
 vec3 get_sky_radiance(vec3 view_dir, vec3 sun_dir) {
 	// ray starts at the camera
 	vec3 ray_origin = vec3(0.0);
-	// the actual segment that
+
+	// the actual segment that passes through the atmosphere only
 	vec2 view_segment = get_planet_intersection(ray_origin, view_dir);
 	// if the ray is invalid
 	if (view_segment.x < 0.0) {
 		return vec3(0.0);
 	}
+	// the top of the world
+	vec3 top = vec3(0.0, 1.0, 0.0);
+	float mu = clamp(dot(top, view_dir), -1.0, 1.0);
 	// the ultimate call
-	vec3 skylight = get_ray_scatter(ray_origin, view_dir, sun_dir, view_segment.x, view_segment.y, view_ray_steps, sun_ray_steps);
+	vec3 skylight = get_ray_scatter(ray_origin, view_dir, sun_dir,
+		view_segment.x, view_segment.y,
+		get_exp_steps(mu, view_ray_min_steps, view_ray_max_steps),
+		get_exp_steps(mu, sun_ray_min_steps, sun_ray_max_steps));
 	return skylight;
 }
 
