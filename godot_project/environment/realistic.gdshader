@@ -5,7 +5,7 @@ const float INFINITY = 1.0 / 0.0;
 
 // the planet
 const float PLANET_RADIUS = 6371000.0; // radius of the planet, duh
-const vec3 PLANET_CENTER = vec3(0.0, -PLANET_RADIUS-0.250000015, 0.0); // assumes y=0 is planet surface/sea level
+const vec3 PLANET_CENTER = vec3(0.0, -PLANET_RADIUS-0.250000015-1000.0, 0.0); // assumes y=0 is planet surface/sea level
 const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this one uses the karman line
 // atmosphere
 // rayleigh
@@ -22,10 +22,10 @@ const float OZONE_PEAK_ALTITUDE = 20000.0;
 
 // samples along the camera to the pixel ray
 uniform int view_ray_min_steps = 6;
-uniform int view_ray_max_steps = 48;
+uniform int view_ray_max_steps = 36;
 // sample along the sample to sun ray
 uniform int sun_ray_min_steps = 2;
-uniform int sun_ray_max_steps = 6;
+uniform int sun_ray_max_steps = 3;
 uniform float steps_curve_k = 10.0;
 
 uniform float exposure = 30.0;
@@ -81,7 +81,7 @@ vec2 get_ground_intersection(vec3 ray_origin, vec3 ray_direction) {
 // starts at atmosphere entry and ends at either atmosphere exit or ground hit
 vec2 get_planet_intersection(vec3 ray_origin, vec3 ray_direction) {
 	vec2 atm = get_atmosphere_intersection(ray_origin, ray_direction);
-	// if never intersected atmosphere or behind?
+	// if never intersected atmosphere or behind origin
 	if (atm.y <= 0.0) {
 		return vec2(-1.0);
 	}
@@ -95,9 +95,10 @@ vec2 get_planet_intersection(vec3 ray_origin, vec3 ray_direction) {
 	float t1 = max(atm.y, 0.0);
 	// consider ground intersection
 	vec2 gnd = get_ground_intersection(ray_origin, ray_direction);
-	if (gnd.x > 0.0) {
-		t1 = min(t1, gnd.x);
+	if (gnd.x > 0.0 && gnd.x < t1) {
+		return vec2(-1.0);
 	}
+	t1 = atm.y;
 	// extra check just in case, gets rid of invalid ray segments
 	if (t1 < t0) {
 		return vec2(-1.0);

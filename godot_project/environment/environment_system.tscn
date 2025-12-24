@@ -6,10 +6,10 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6u5e0"]
 shader = ExtResource("2_6u5e0")
 shader_parameter/mie_factor = 0.85
-shader_parameter/view_ray_min_steps = 4
+shader_parameter/view_ray_min_steps = 6
 shader_parameter/view_ray_max_steps = 36
-shader_parameter/sun_ray_min_steps = 4
-shader_parameter/sun_ray_max_steps = 4
+shader_parameter/sun_ray_min_steps = 2
+shader_parameter/sun_ray_max_steps = 3
 shader_parameter/steps_curve_k = 10.0
 shader_parameter/exposure = 30.0
 
