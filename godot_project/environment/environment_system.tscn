@@ -5,6 +5,7 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6u5e0"]
 shader = ExtResource("2_6u5e0")
+shader_parameter/mie_factor = 0.85
 
 [sub_resource type="Sky" id="Sky_i61be"]
 sky_material = SubResource("ShaderMaterial_6u5e0")
@@ -15,7 +16,7 @@ sky = SubResource("Sky_i61be")
 
 [node name="EnvironmentSystem" type="Node3D"]
 script = ExtResource("1_xq3th")
-time = 0.022018919461934322
+time = 0.6982099083517408
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_xdsv0")

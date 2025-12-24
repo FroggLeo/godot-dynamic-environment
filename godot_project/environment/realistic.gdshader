@@ -14,6 +14,7 @@ const float RAYLEIGH_SCALE_HEIGHT = 8300.0;
 // mie
 const vec3 MIE_BETA = vec3(0.0);
 const float MIE_SCALE_HEIGHT = 1200.0;
+uniform float mie_factor = 0.85;
 
 // general line-sphere intesection formula
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
@@ -31,11 +32,10 @@ vec2 sphere_intersection(float sphere_radius, vec3 sphere_center, vec3 line_orig
 	// *double absolute value squared is dot product: ||v||^2 = dot(v,v)
 	float a = dot(line_direction, line_direction);
 	// b = 2(u * (o - c)) = 2u(o - c)
-	// o - c = dot(o, c)
-	// why is u/line direction left out?
-	float b = 2.0*dot(line_origin, sphere_center);
-	// c = (o - c)(o - c) - r^2 = ||o - c||^2 - r^2 = dot(o - c, o - c) - r^2
+	// u(o - c) = dot(o - c, u)
 	vec3 o_c = line_origin - sphere_center;
+	float b = 2.0*dot(o_c, line_direction);
+	// c = (o - c)(o - c) - r^2 = ||o - c||^2 - r^2 = dot(o - c, o - c) - r^2
 	float c = dot(o_c, o_c) - sphere_radius*sphere_radius;
 	// d - distance from origin of line
 	// ad^2 + bd + c = 0
@@ -47,6 +47,7 @@ vec2 sphere_intersection(float sphere_radius, vec3 sphere_center, vec3 line_orig
 		return vec2(-1.0); // return -1 for no intersect
 	}
 	// return the full calculated d, the +- and /2a for all values
+	d = sqrt(d);
 	return vec2(-b - d, -b + d) / (a * 2.0);
 }
 
@@ -79,7 +80,7 @@ float mie_density(float altitude) {
 	return exp(-max(altitude, 0.0) / MIE_SCALE_HEIGHT);
 }
 
-// phase is how the light is scattering, right?
+// phase is light scatter
 float rayleigh_phase(float mu) {
 	// rayleigh phase = 3/4 * (1 + cos^2(scattering angle))
 	// normalize by multiplying 1/4pi
@@ -87,8 +88,12 @@ float rayleigh_phase(float mu) {
 	return (1.0 + mu * mu) * 3.0 / (16.0 * PI);
 }
 
-float mie_phase() {
-	return 0.0;
+float mie_phase(float mu, float g) {
+	// mie scattering using the henyey greenstein (HG) model
+	// probability of scattering = (1 / 4pi) * (1 - g^2)/(1 + g^2 - 2gcos(scattering angle))^3/2
+	// g is the asymmetry factor, or mie_factor
+	float g2 = g * g;
+	return (1.0 - g2) / (4.0 * PI * pow(1.0 + g2 - 2.0 * g * mu, 1.5));
 }
 
 // why vec2?
