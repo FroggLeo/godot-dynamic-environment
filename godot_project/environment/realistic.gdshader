@@ -7,12 +7,13 @@ const float INFINITY = 1.0 / 0.0;
 const float PLANET_RADIUS = 6371000.0; // radius of the planet, duh
 const vec3 PLANET_CENTER = vec3(0.0, -PLANET_RADIUS, 0.0); // assumes y=0 is planet surface/sea level
 const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this one uses the karman line
-// correct ratios, values not true
-const vec3 RAYLEIGH_BETA = vec3(
-	5.8e-3, // red
-	13.5e-3, // green
-	33.1e-3 // blue
-);
+// atmosphere
+// rayleigh
+const vec3 RAYLEIGH_BETA = vec3(5.8e-3, 13.5e-3, 33.1e-3); // correct ratios, values not true
+const float RAYLEIGH_SCALE_HEIGHT = 8300.0;
+// mie
+const vec3 MIE_BETA = vec3(0.0);
+const float MIE_SCALE_HEIGHT = 1200.0;
 
 // general line-sphere intesection formula
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
@@ -20,16 +21,12 @@ const vec3 RAYLEIGH_BETA = vec3(
 // t0 and t1 just being the time you enter/exit the sphere
 vec2 sphere_intersection(float sphere_radius, vec3 sphere_center, vec3 line_origin, vec3 line_direction) {
 	// the sphere
-	// x - points on the sphere
 	// c - center point
 	// r - radius of sphere
-
 	// the line
-	// x - points on the line
 	// o - origin of line
-	// d - distance from origin of line
 	// u - direction of line (vector)
-
+	// abcd
 	// a = u * u = ||u||^2 = 1 (if normalized)
 	// *double absolute value squared is dot product: ||v||^2 = dot(v,v)
 	float a = dot(line_direction, line_direction);
@@ -40,6 +37,7 @@ vec2 sphere_intersection(float sphere_radius, vec3 sphere_center, vec3 line_orig
 	// c = (o - c)(o - c) - r^2 = ||o - c||^2 - r^2 = dot(o - c, o - c) - r^2
 	vec3 o_c = line_origin - sphere_center;
 	float c = dot(o_c, o_c) - sphere_radius*sphere_radius;
+	// d - distance from origin of line
 	// ad^2 + bd + c = 0
 	// d is just quadratic formula! how math!
 	// d = (-b +- sqrt(b^2-4ac)) / 2a
@@ -52,28 +50,33 @@ vec2 sphere_intersection(float sphere_radius, vec3 sphere_center, vec3 line_orig
 	return vec2(-b - d, -b + d) / (a * 2.0);
 }
 
-// the part of the ray that is actually inside the atmosphere
-// just calls sphere intersection with pre filled parameters
-vec2 atmosphere_intersection() {
-	return vec2(0.0);
+// the place of the ray that intersects the atmosphere
+// just calls sphere intersection with prefilled parameters
+vec2 atmosphere_intersection(vec3 ray_origin, vec3 ray_direction) {
+	// since we are calculating light intersecting the atmosphere, we are using planet radius + atmosphere height
+	return sphere_intersection(PLANET_RADIUS+ATMOSPHERE_HEIGHT, PLANET_CENTER, ray_origin, ray_direction);
+}
+
+// the place of the ray that intersects the ground
+vec2 ground_intersection(vec3 ray_origin, vec3 ray_direction) {
+	return sphere_intersection(PLANET_RADIUS, PLANET_CENTER, ray_origin, ray_direction);
 }
 
 // the height above/below sea level
 // distance from center - planet radius
-float altitude() {
-	return 0.0;
+float altitude(vec3 player_pos) {
+	return length(player_pos - PLANET_CENTER) - PLANET_RADIUS;
 }
 
-// what is density??
-// how dense the air is or how dense/powerful the scattering is?
-// is h altitude?
-// is there a formula someone made for this?
-float rayleigh_density(float h) {
-	return 0.0;
+// density is how dense the air is or how dense/powerful the scattering is
+// we are modeling the density using an equation and a scale height
+// general model: density = e^(-altitude / scale height)
+float rayleigh_density(float altitude) {
+	return exp(-max(altitude, 0.0) / RAYLEIGH_SCALE_HEIGHT);
 }
 
-float mie_density(float h) {
-	return 0.0;
+float mie_density(float altitude) {
+	return exp(-max(altitude, 0.0) / MIE_SCALE_HEIGHT);
 }
 
 // phase is how the light is scattering, right?
@@ -102,19 +105,19 @@ vec2 optical_depth() {
 // absorb light based on the optical depth of the air
 // what should it output?
 vec3 ray_absorb() {
-
+	return vec3(0.0);
 }
 
 // the final function?
 vec2 ray_scatter() {
-
+	return vec2(0.0);
 }
 
 // Called for every visible pixel in the sky background, as well as all pixels
 // in the radiance cubemap.
 void sky() {
 	// environment stuff
-	vec3 c; // final color that will be applied
+	vec3 c = vec3(0.0); // final color that will be applied
 	vec3 top = vec3(0.0,1.0,0.0); // the top of the world/zenith
 	vec3 view_dir = normalize(EYEDIR); // the direction where this pixel is
 	float height = view_dir.y; // how high this pixel is, -1..1
@@ -124,11 +127,5 @@ void sky() {
 	if (LIGHT0_ENABLED) { sun_dir = normalize(LIGHT0_DIRECTION); }
 	vec3 moon_dir = top; // default to top
 	if (LIGHT1_ENABLED) { moon_dir = normalize(LIGHT1_DIRECTION); }
-	// scattering
-	// super simple air mass approximation, although not very accurate near horizon/for twilight
-
-	vec3 transmittance = exp(-optical_depth); // beer lambert law, transmittance = e^(-optical depth)
-	vec3 scattered = (vec3(1.0) - transmittance); // where did this come from??
-	c = scattered * vec3(1.0);
 	COLOR = c;
 }
