@@ -15,10 +15,10 @@ group_uniforms world;
 
 group_uniforms sun;
 	uniform float sun_strength: hint_range(0.0, 500.0, 1.0) = 300.0;
-	uniform float sun_size_deg: hint_range(0.0, 20.0, 0.1) = 0.5;
+	uniform float sun_size_deg: hint_range(0.0, 20.0, 0.1) = 5.0;
 	uniform float sun_softness: hint_range(0.01, 0.3, 0.01) = 0.05;
 	uniform float sun_glow_size: hint_range(0.0, 20.0, 0.5) = 1.5;
-	uniform float sun_glow_strength: hint_range(0.0, 0.99, 0.01) = 0.5;
+	uniform float sun_glow_strength: hint_range(0.0, 0.99, 0.01) = 0.8;
 	uniform vec3 sun_base_color: source_color = vec3(1.0, 1.0, 1.0);
 
 group_uniforms rayleigh;
@@ -381,7 +381,9 @@ void sky() {
 	c = get_sky_radiance(top, view_dir, sun_dir, camera_origin, exposure);
 	// add the sun
 	float sun_mask = get_sun_mask(view_dir, sun_dir);
-	vec3 sun_color = sun_base_color * get_sun_transmittance(camera_origin, sun_dir);
-	c += sun_color * sun_mask * sun_strength;
+	if (sun_mask > 1e-6) {
+		vec3 sun_color = sun_base_color * get_sun_transmittance(camera_origin, view_dir);
+		c += sun_color * sun_mask * sun_strength;
+	}
 	COLOR = c;
 }
