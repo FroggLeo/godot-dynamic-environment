@@ -16,9 +16,9 @@ group_uniforms world;
 group_uniforms sun;
 	uniform float sun_strength: hint_range(0.0, 500.0, 1.0) = 300.0;
 	uniform float sun_size_deg: hint_range(0.0, 20.0, 0.1) = 5.0;
-	uniform float sun_softness: hint_range(0.01, 0.3, 0.01) = 0.05;
-	uniform float sun_glow_size: hint_range(0.0, 20.0, 0.5) = 1.5;
-	uniform float sun_glow_strength: hint_range(0.0, 0.99, 0.01) = 0.8;
+	uniform float sun_softness: hint_range(0.01, 0.3, 0.01) = 0.1;
+	uniform float sun_glow_size: hint_range(0.0, 40.0, 0.1) = 15.0;
+	uniform float sun_glow_strength: hint_range(0.0, 1.0, 0.01) = 0.3;
 	uniform vec3 sun_base_color: source_color = vec3(1.0, 1.0, 1.0);
 
 group_uniforms moon;
@@ -333,7 +333,8 @@ float c_softness, float c_glow_size, float c_glow_strength) {
 	// the glow
 	float glow = exp(-angle_rad / glow_falloff);
 	// sun glow strength as a percentage of sun strength
-	glow /= c_strength * (1.0-c_glow_strength);
+	glow /= c_strength;
+	glow *= c_glow_strength;
 	// removes the glow boost to the disc itself
 	glow *= (1.0 - disc);
 	return clamp(disc + glow, 0.0, 1.0);
@@ -341,15 +342,22 @@ float c_softness, float c_glow_size, float c_glow_strength) {
 
 // calculates the sun's color based on its elevation
 // the color after it goes through the atmosphere
-vec3 get_sun_transmittance(vec3 ray_origin, vec3 sun_dir) {
-	vec2 ray_segment = get_planet_intersection(ray_origin, sun_dir);
-	// if invalid
+vec3 get_sun_transmittance(vec3 ray_origin, vec3 view_dir) {
+	vec2 ray_segment = get_planet_intersection(ray_origin, view_dir);
+	// if invalid, just skip
 	if (ray_segment.x < 0.0) {
 		return vec3(0.0);
 	}
 	int steps = sun_ray_max_steps;
-	vec3 optical_depth = get_optical_depth(ray_origin, sun_dir, ray_segment.x, ray_segment.y, steps);
+	vec3 optical_depth = get_optical_depth(ray_origin, view_dir, ray_segment.x, ray_segment.y, steps);
 	return get_ray_absorb(optical_depth);
+}
+
+// the moon function
+// gets the moon phase from new moon -> full moon: 0..1
+float get_moon_phase(vec3 view_dir, vec3 sun_dir, vec3 moon_dir) {
+
+	return 0.0;
 }
 
 // the final function...
