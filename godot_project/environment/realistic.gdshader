@@ -5,38 +5,46 @@ const float INFINITY = 1.0 / 0.0;
 
 // the planet
 const float PLANET_RADIUS = 6371000.0; // radius of the planet, duh
-const vec3 PLANET_CENTER = vec3(0.0, -PLANET_RADIUS-0.250000015, 0.0); // assumes y=0 is planet surface/sea level
+const vec3 PLANET_CENTER = vec3(0.0, -PLANET_RADIUS, 0.0); // assumes y=0 is planet surface/sea level
 const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this one uses the karman line
-// atmosphere
-// rayleigh
-uniform float rayleigh_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
-uniform float rayleigh_scale_height: hint_range(1000.0, 20000.0, 50.0) = 8300.0;
-const vec3 RAYLEIGH_BETA = vec3(5.802, 13.558, 33.100) * 1e-6; // correct ratios, values not true
-// mie
-uniform float mie_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
-uniform float mie_scale_height: hint_range(500.0, 15000.0, 50.0) = 1200.0;
-uniform float mie_g = 0.85;
-const vec3 MIE_BETA = vec3(3.996) * 1e-6;
-// ozone
-uniform float ozone_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
-uniform float ozone_scale_height: hint_range(1000.0, 20000.0, 50.0) = 7000.0;
-uniform float ozone_peak_altitude: hint_range(1000.0, 50000.0, 100.0) = 20000.0;
-const vec3 OZONE_BETA = vec3(0.650, 1.881, 0.085) * 1e-6;
 
-// samples along the camera to the pixel ray
-// high performance impact
-// performance / quality
-uniform int view_ray_min_steps = 6;
-uniform int view_ray_max_steps = 36;
-// sample along the sample to sun ray
-// best to leave the same, or there will be bands of differing light strengths
-uniform int sun_ray_min_steps = 3;
-uniform int sun_ray_max_steps = 3;
-// how extreme the curve
-// higher -> better performance & lower quality
-uniform float steps_curve_k = 10.0;
+group_uniforms camera;
+	uniform float camera_altitude: hint_range(0.5, 100000.0, 0.01) = 0.5;
 
-uniform float exposure = 30.0;
+group_uniforms rayleigh;
+	uniform float rayleigh_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
+	uniform float rayleigh_scale_height: hint_range(1000.0, 20000.0, 50.0) = 8300.0;
+	const vec3 RAYLEIGH_BETA = vec3(5.802, 13.558, 33.100) * 1e-6; // correct ratios, values not true
+
+group_uniforms mie;
+	uniform float mie_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
+	uniform float mie_scale_height: hint_range(500.0, 15000.0, 50.0) = 1200.0;
+	uniform float mie_g: hint_range(0.0, 0.99, 0.01) = 0.85;
+	const vec3 MIE_BETA = vec3(3.996) * 1e-6;
+
+group_uniforms ozone;
+	uniform float ozone_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
+	uniform float ozone_scale_height: hint_range(1000.0, 20000.0, 50.0) = 7000.0;
+	uniform float ozone_peak_altitude: hint_range(1000.0, 50000.0, 100.0) = 20000.0;
+	const vec3 OZONE_BETA = vec3(0.650, 1.881, 0.085) * 1e-6;
+
+group_uniforms quality;
+	// samples along the camera to the pixel ray
+	// high performance impact
+	// performance / quality
+	// for better quality and no color banding, try 16 & 36
+	uniform int view_ray_min_steps: hint_range(1, 64, 1) = 8;
+	uniform int view_ray_max_steps: hint_range(1, 64, 1) = 8;
+	// sample along the sample to sun ray
+	// best to leave the same, or there will be bands of differing light strengths
+	uniform int sun_ray_min_steps: hint_range(1, 64, 1) = 3;
+	uniform int sun_ray_max_steps: hint_range(1, 64, 1) = 3;
+	// how extreme the curve
+	// higher -> better performance & lower quality
+	uniform float steps_curve_k: hint_range(0.0, 30.0, 0.1) = 10.0;
+
+group_uniforms tonemapping;
+	uniform float exposure: hint_range(0.0, 80.0, 0.5) = 30.0;
 
 // general line-sphere intesection formula
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
@@ -298,7 +306,7 @@ float t0, float t1, int view_steps, int sun_steps) {
 // the final function...
 vec3 get_sky_radiance(vec3 view_dir, vec3 sun_dir) {
 	// ray starts at the camera
-	vec3 ray_origin = vec3(0.0);
+	vec3 ray_origin = PLANET_CENTER + vec3(0.0, PLANET_RADIUS + camera_altitude, 0.0);
 
 	// the actual segment that passes through the atmosphere only
 	vec2 view_segment = get_planet_intersection(ray_origin, view_dir);
