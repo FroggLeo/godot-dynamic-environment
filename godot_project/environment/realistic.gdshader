@@ -15,8 +15,8 @@ group_uniforms world;
 
 group_uniforms sun;
 	uniform float sun_strength: hint_range(0.0, 500.0, 1.0) = 300.0;
-	uniform float sun_size_deg: hint_range(0.0, 20.0, 0.1) = 5.0;
-	uniform float sun_softness: hint_range(0.01, 0.3, 0.01) = 0.1;
+	uniform float sun_size_deg: hint_range(0.0, 20.0, 0.1) = 3.0;
+	uniform float sun_softness: hint_range(0.01, 1.0, 0.01) = 0.5;
 	uniform float sun_glow_size: hint_range(0.0, 40.0, 0.1) = 15.0;
 	uniform float sun_glow_strength: hint_range(0.0, 1.0, 0.01) = 0.3;
 	uniform vec3 sun_base_color: source_color = vec3(1.0, 1.0, 1.0);
@@ -107,8 +107,8 @@ vec2 get_ground_intersection(vec3 ray_origin, vec3 ray_direction) {
 	return get_sphere_intersection(PLANET_RADIUS, PLANET_CENTER, ray_origin, ray_direction);
 }
 
-// general planet intersection that considers only the segment that travels through the atmosphere
-// starts at atmosphere entry and ends at either atmosphere exit or ground hit
+// handles the rays that go from the camera to a pixel in the sky
+// ground is a valid point unlike sunlight intersection below
 vec2 get_planet_intersection(vec3 ray_origin, vec3 ray_direction) {
 	vec2 atm = get_atmosphere_intersection(ray_origin, ray_direction);
 	// if never intersected atmosphere or behind origin
@@ -125,12 +125,29 @@ vec2 get_planet_intersection(vec3 ray_origin, vec3 ray_direction) {
 	float t1 = max(atm.y, 0.0);
 	// consider ground intersection
 	vec2 gnd = get_ground_intersection(ray_origin, ray_direction);
-	if (gnd.x > 0.0 && gnd.x < t1) {
+	if (gnd.x > 0.0) {
+		t1 = min(t1, gnd.x);
+	}
+	// extra check just in case, gets rid of invalid ray segments
+	if (t1 <= t0) {
 		return vec2(-1.0);
 	}
-	t1 = atm.y;
-	// extra check just in case, gets rid of invalid ray segments
-	if (t1 < t0) {
+	return vec2(t0, t1);
+}
+
+// handles the rays that goes from the sunlight to the scatter point
+// if the sunlight hits the ground, then it is invalid
+vec2 get_sunlight_intersection(vec3 point, vec3 sun_dir) {
+	vec2 atm = get_atmosphere_intersection(point, sun_dir);
+	// if never intersected atmosphere or behind origin
+	if (atm.y <= 0.0) {
+		return vec2(-1.0);
+	}
+	float t0 = max(atm.x, 0.0);
+	float t1 = atm.y;
+	vec2 gnd = get_ground_intersection(point, sun_dir);
+	// if the planet was hit before leaving atmosphere
+	if (gnd.x > 0.0 && gnd.x < t1) {
 		return vec2(-1.0);
 	}
 	return vec2(t0, t1);
@@ -160,7 +177,7 @@ float get_ozone_density(float altitude) {
 	// using the chapman theory
 	// taken from here
 	// https://en.wikipedia.org/wiki/Chapman_function
-	float x = (altitude - ozone_peak_altitude) / ozone_scale_height;
+	float x = (max(altitude, 0.0) - ozone_peak_altitude) / ozone_scale_height;
 	return exp(-x - exp(-x));
 }
 
@@ -297,7 +314,7 @@ float t0, float t1, int view_steps, int sun_steps) {
 		vec3 view_transmittance = get_ray_absorb(view_optical_depth);
 		// second transmittance
 		// the factor loss of the sunlight from top of atmosphere to the scatter point
-		vec2 sunlight_segment = get_planet_intersection(point, sun_direction);
+		vec2 sunlight_segment = get_sunlight_intersection(point, sun_direction);
 		float scatter_t0 = max(sunlight_segment.x, 0.0);
 		float scatter_t1 = sunlight_segment.y;
 		vec3 sunlight_transmittance = vec3(0.0);
@@ -343,7 +360,7 @@ float c_softness, float c_glow_size, float c_glow_strength) {
 // calculates the sun's color based on its elevation
 // the color after it goes through the atmosphere
 vec3 get_sun_transmittance(vec3 ray_origin, vec3 view_dir) {
-	vec2 ray_segment = get_planet_intersection(ray_origin, view_dir);
+	vec2 ray_segment = get_sunlight_intersection(ray_origin, view_dir);
 	// if invalid, just skip
 	if (ray_segment.x < 0.0) {
 		return vec3(0.0);
@@ -366,7 +383,7 @@ vec3 get_sky_radiance(vec3 top, vec3 view_dir, vec3 sun_dir, vec3 ray_origin, fl
 	vec2 view_segment = get_planet_intersection(ray_origin, view_dir);
 	// if the ray is invalid
 	if (view_segment.x < 0.0) {
-		return ground_color;
+		return vec3(0.0);
 	}
 	float mu = clamp(dot(top, view_dir), -1.0, 1.0);
 	// the ultimate call
