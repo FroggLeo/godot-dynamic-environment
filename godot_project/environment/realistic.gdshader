@@ -10,14 +10,14 @@ const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this on
 
 group_uniforms world;
 	uniform float camera_altitude: hint_range(0.5, 99999.0, 0.01) = 0.5;
-	uniform float exposure: hint_range(0.0, 80.0, 0.5) = 20.0;
+	uniform float exposure: hint_range(0.0, 80.0, 0.5) = 13.5;
 	uniform vec3 ground_color: source_color = vec3(0.12, 0.09, 0.07);
 
 group_uniforms sun;
 	uniform float sun_strength: hint_range(0.0, 500.0, 1.0) = 300.0;
 	uniform float sun_size_deg: hint_range(0.0, 20.0, 0.1) = 3.0;
-	uniform float sun_softness: hint_range(0.01, 1.0, 0.01) = 0.5;
-	uniform float sun_glow_size: hint_range(0.0, 40.0, 0.1) = 15.0;
+	uniform float sun_softness: hint_range(0.01, 1.0, 0.01) = 0.15;
+	uniform float sun_glow_size: hint_range(0.0, 40.0, 0.1) = 5.0;
 	uniform float sun_glow_strength: hint_range(0.0, 1.0, 0.01) = 0.3;
 	uniform vec3 sun_base_color: source_color = vec3(1.0, 1.0, 1.0);
 
@@ -336,25 +336,34 @@ float t0, float t1, int view_steps, int sun_steps) {
 	return radiance;
 }
 
-// calculates the proper area in the sky of any celestial
-float get_celestial_mask(vec3 view_dir, vec3 c_dir, float c_strength, float c_size_deg,
-float c_softness, float c_glow_size, float c_glow_strength) {
+// calculates the proper disc in the sky of any celestial
+float get_celestial_disc(vec3 view_dir, vec3 c_dir, float c_strength, float c_size_deg, float c_softness) {
+	float angle = clamp(dot(view_dir, c_dir), -1.0, 1.0);
+	// turn the -1..1 into radians -pi..pi
+	float angle_rad = acos(angle);
+	float disc_radius = radians(c_size_deg * 0.5); // planet disc in rad
+	// the hard disc
+	float disc = smoothstep(disc_radius, disc_radius * 0.5, angle_rad);
+	// the soft edge
+	float edge = smoothstep(disc_radius * (1.0 + c_softness), disc_radius, angle_rad) - disc;
+	return clamp(disc * c_strength + edge, 0.0, c_strength);
+}
+
+// calculates the proper glow in the sky of any celestial
+float get_celestial_glow(vec3 view_dir, vec3 c_dir, float c_size_deg,
+float c_glow_size, float c_glow_strength, float disc_mask) {
 	float angle = clamp(dot(view_dir, c_dir), -1.0, 1.0);
 	// turn the -1..1 into radians -pi..pi
 	float angle_rad = acos(angle);
 	float disc_radius = radians(c_size_deg * 0.5); // planet disc in rad
 	float glow_radius = disc_radius + radians(c_glow_size); // planet glow in rad
-	// softness of the disc edge
-	float disc = smoothstep(disc_radius * (1.0 + c_softness), disc_radius * (1.0 - c_softness), angle_rad);
+	// part for the exponential decay
 	float glow_falloff = max(1e-6, glow_radius - disc_radius);
-	// the glow
+	// the glow with exponential falloff
 	float glow = exp(-angle_rad / glow_falloff);
-	// sun glow strength as a percentage of sun strength
-	glow /= c_strength;
-	glow *= c_glow_strength;
 	// removes the glow boost to the disc itself
-	glow *= (1.0 - disc);
-	return clamp(disc + glow, 0.0, 1.0);
+	glow *= (1.0 - disc_mask);
+	return clamp(glow * c_glow_strength, 0.0, c_glow_strength);
 }
 
 // calculates the sun's color based on its elevation
@@ -413,11 +422,13 @@ void sky() {
 	// the camera origin is where the ray should start, ray origin
 	c = get_sky_radiance(top, view_dir, sun_dir, camera_origin, exposure);
 	// add the sun
-	float sun_mask = get_celestial_mask(view_dir, sun_dir, sun_strength, sun_size_deg,
-		sun_softness, sun_glow_size, sun_glow_strength);
-	if (sun_mask > 1e-6) {
+	float sun_disc = get_celestial_disc(view_dir, sun_dir, sun_strength, sun_size_deg, sun_softness);
+	float sun_glow = get_celestial_glow(view_dir, sun_dir, sun_size_deg, sun_glow_size, sun_glow_strength, sun_disc);
+	if (sun_disc + sun_glow > 1e-4) {
 		vec3 sun_color = sun_base_color * get_sun_transmittance(camera_origin, view_dir);
-		c += sun_color * sun_mask * sun_strength;
+		// decrease the glow factor as we reach the horizon, don't want much glow in the night
+		float glow_factor = clamp(dot(top, sun_dir) + 0.15, 0.0, 1.0);
+		c += sun_color * sun_disc + sun_color * sun_glow * glow_factor;
 	}
 	COLOR = c;
 }
