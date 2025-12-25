@@ -8,8 +8,9 @@ const float PLANET_RADIUS = 6371000.0; // radius of the planet, duh
 const vec3 PLANET_CENTER = vec3(0.0, -PLANET_RADIUS, 0.0); // assumes y=0 is planet surface/sea level
 const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this one uses the karman line
 
-group_uniforms camera;
+group_uniforms world;
 	uniform float camera_altitude: hint_range(0.5, 100000.0, 0.01) = 0.5;
+	uniform float exposure: hint_range(0.0, 80.0, 0.5) = 30.0;
 
 group_uniforms rayleigh;
 	uniform float rayleigh_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
@@ -42,9 +43,6 @@ group_uniforms quality;
 	// how extreme the curve
 	// higher -> better performance & lower quality
 	uniform float steps_curve_k: hint_range(0.0, 30.0, 0.1) = 10.0;
-
-group_uniforms tonemapping;
-	uniform float exposure: hint_range(0.0, 80.0, 0.5) = 30.0;
 
 // general line-sphere intesection formula
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
@@ -226,7 +224,9 @@ vec3 get_ray_absorb(vec3 optical_depth) {
 	// modified beer lambert law
 	// transmittance = e^-(total optical depth)
 	// total optical depth = (rayleigh beta * rayleigh optical depth) + (mie beta * mie optical depth) + (ozone beta * ozone optical depth)
-	return exp(-(optical_depth.x * RAYLEIGH_BETA + optical_depth.y * MIE_BETA + optical_depth.z * OZONE_BETA));
+	return exp(-(optical_depth.x * RAYLEIGH_BETA * rayleigh_strength +
+		optical_depth.y * MIE_BETA * mie_strength +
+		optical_depth.z * OZONE_BETA * ozone_strength));
 }
 
 // dims the side opposite of the sun
@@ -291,8 +291,8 @@ float t0, float t1, int view_steps, int sun_steps) {
 		}
 		// the amount of rgb light that gets redirected back into view per meter traveled at this point
 		vec3 scatter_coefficient =
-			RAYLEIGH_BETA * atmosphere_density.x * rayleigh_phase +
-			MIE_BETA * atmosphere_density.y * mie_phase;
+			RAYLEIGH_BETA * rayleigh_strength * atmosphere_density.x * rayleigh_phase +
+			MIE_BETA * mie_strength * atmosphere_density.y * mie_phase;
 		// how much more the sky glows from this segment is added to the total
 		// size * scatter coefficient is the x * y for integral estimation
 		// then multiply that area (now the amount of light) by how much makes it through the two stages
