@@ -45,20 +45,30 @@ group_uniforms ozone;
 	uniform float ozone_peak_altitude: hint_range(1000.0, 50000.0, 100.0) = 20000.0;
 	const vec3 OZONE_BETA = vec3(0.650, 1.881, 0.085) * 1e-6;
 
-group_uniforms quality;
+group_uniforms sampling_steps;
+	uniform int view_ray_steps: hint_range(1, 64, 1) = 16;
+	uniform int sun_ray_steps: hint_range(1, 64, 1) = 3;
+
+group_uniforms importance_sampling;
+	// essentially importance sampling is placing more 
+	uniform bool enable_importance_sampling = true;
+	uniform float is_factor: hint_range(0.0, 30.0, 0.1) = 10.0;
+
+group_uniforms adaptive_step_size;
+	uniform bool enable_adaptive_step = false;
+	// how extreme the curve, or the difference between high and low samples
+	// higher -> better performance & lower quality
+	uniform float as_factor: hint_range(0.0, 30.0, 0.1) = 10.0;
 	// samples along the camera to the pixel ray
 	// high performance impact
 	// performance / quality
 	// for better quality and no color banding, try 16 & 36
-	uniform int view_ray_min_steps: hint_range(1, 64, 1) = 8;
-	uniform int view_ray_max_steps: hint_range(1, 64, 1) = 8;
+	uniform int view_ray_min_steps: hint_range(1, 64, 1) = 16;
+	uniform int view_ray_max_steps: hint_range(1, 64, 1) = 36;
 	// sample along the sample to sun ray
 	// best to leave the same, or there will be bands of differing light strengths
 	uniform int sun_ray_min_steps: hint_range(1, 64, 1) = 3;
 	uniform int sun_ray_max_steps: hint_range(1, 64, 1) = 3;
-	// how extreme the curve
-	// higher -> better performance & lower quality
-	uniform float steps_curve_k: hint_range(0.0, 30.0, 0.1) = 10.0;
 
 // general line-sphere intesection formula
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
@@ -206,11 +216,12 @@ float get_mie_phase(float mu, float g) {
 
 // there is exponentially less high steps than low steps
 // as the varying vector increases, the amount of steps exponentially increases
-int get_exp_steps(float mu, int low_steps, int high_steps) {
+// weighing horizon as important to sample more
+int get_adaptive_steps(float mu, int low_steps, int high_steps) {
 	// get the horizon factor so that zenith is 0 and horizon is 1
 	float horizon_factor = 1.0 - abs(mu);
 	// how the two steps values are mixed
-	float mix_factor = pow(horizon_factor, steps_curve_k);
+	float mix_factor = pow(horizon_factor, as_factor);
 	// get the smooth float version of the steps
 	float steps_float = mix(float(low_steps), float(high_steps), mix_factor);
 	// round up or down properly
@@ -395,11 +406,19 @@ vec3 get_sky_radiance(vec3 top, vec3 view_dir, vec3 sun_dir, vec3 ray_origin, fl
 		return vec3(0.0);
 	}
 	float mu = clamp(dot(top, view_dir), -1.0, 1.0);
+	int view_steps = view_ray_steps;
+	int sun_steps = sun_ray_steps;
+	if (enable_importance_sampling) {
+		// TODO make the function
+		view_steps = view_steps;
+		sun_steps = sun_steps;
+	} else if (enable_adaptive_step) {
+		view_steps = get_adaptive_steps(mu, view_ray_min_steps, view_ray_max_steps);
+		sun_steps = get_adaptive_steps(mu, sun_ray_min_steps, sun_ray_max_steps);
+	}
 	// the ultimate call
 	vec3 skylight = get_ray_scatter(ray_origin, view_dir, sun_dir,
-		view_segment.x, view_segment.y,
-		get_exp_steps(mu, view_ray_min_steps, view_ray_max_steps),
-		get_exp_steps(mu, sun_ray_min_steps, sun_ray_max_steps));
+		view_segment.x, view_segment.y, view_steps, sun_steps);
 	return skylight * exposure_sky; // as a color rgb
 }
 
