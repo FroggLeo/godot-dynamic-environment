@@ -14,9 +14,11 @@ group_uniforms world;
 	uniform vec3 ground_color: source_color = vec3(0.12, 0.09, 0.07);
 
 group_uniforms sun;
-	uniform float sun_strength = 1.0;
-	uniform float sun_size_deg: hint_range(0.0, 10.0, 0.1) = 0.5;
-	uniform float sun_glow_deg = 10.0;
+	uniform float sun_strength: hint_range(0.0, 500.0, 1.0) = 300.0;
+	uniform float sun_size_deg: hint_range(0.0, 20.0, 0.1) = 0.5;
+	uniform float sun_softness: hint_range(0.01, 0.3, 0.01) = 0.05;
+	uniform float sun_glow_size: hint_range(0.0, 20.0, 0.5) = 1.5;
+	uniform float sun_glow_strength: hint_range(0.0, 0.99, 0.01) = 0.5;
 	uniform vec3 sun_base_color: source_color = vec3(1.0, 1.0, 1.0);
 
 group_uniforms rayleigh;
@@ -311,13 +313,22 @@ float t0, float t1, int view_steps, int sun_steps) {
 }
 
 // calculates the proper area in the sky of a celestial object
-float get_planet_mask(vec3 view_dir, vec3 planet_dir, float planet_size_deg, float planet_glow_deg) {
-	float ray_area = clamp(dot(view_dir, planet_dir), -1.0, 1.0);
+float get_sun_mask(vec3 view_dir, vec3 sun_dir) {
+	float angle = clamp(dot(view_dir, sun_dir), -1.0, 1.0);
 	// turn the -1..1 into radians -pi..pi
-	ray_area = acos(ray_area);
-	float planet_radius = radians(planet_size_deg * 0.5);
-	float planet_glow = planet_radius + radians(planet_glow_deg);
-	return smoothstep(planet_glow, planet_radius, ray_area);
+	float angle_rad = acos(angle);
+	float disc_radius = radians(sun_size_deg * 0.5); // planet disc in rad
+	float glow_radius = disc_radius + radians(sun_glow_size); // planet glow in rad
+	// softness of the disc edge
+	float disc = smoothstep(disc_radius * (1.0 + sun_softness), disc_radius * (1.0 - sun_softness), angle_rad);
+	float glow_falloff = max(1e-6, glow_radius - disc_radius);
+	// the glow
+	float glow = exp(-angle_rad / glow_falloff);
+	// sun glow strength as a percentage of sun strength
+	glow /= sun_strength * (1.0-sun_glow_strength);
+	// removes the glow boost to the disc itself
+	glow *= (1.0 - disc);
+	return clamp(disc + glow, 0.0, 1.0);
 }
 
 // calculates the sun's color based on its elevation
@@ -368,8 +379,9 @@ void sky() {
 	// get the sky radiance
 	// the camera origin is where the ray should start, ray origin
 	c = get_sky_radiance(top, view_dir, sun_dir, camera_origin, exposure);
-	float sun_mask = get_planet_mask(view_dir, sun_dir, sun_size_deg, sun_glow_deg);
+	// add the sun
+	float sun_mask = get_sun_mask(view_dir, sun_dir);
 	vec3 sun_color = sun_base_color * get_sun_transmittance(camera_origin, sun_dir);
-	c += sun_color * sun_mask;
+	c += sun_color * sun_mask * sun_strength;
 	COLOR = c;
 }
