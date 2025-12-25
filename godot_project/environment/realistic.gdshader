@@ -9,8 +9,15 @@ const vec3 PLANET_CENTER = vec3(0.0, -PLANET_RADIUS, 0.0); // assumes y=0 is pla
 const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this one uses the karman line
 
 group_uniforms world;
-	uniform float camera_altitude: hint_range(0.5, 100000.0, 0.01) = 0.5;
+	uniform float camera_altitude: hint_range(0.5, 99999.0, 0.01) = 0.5;
 	uniform float exposure: hint_range(0.0, 80.0, 0.5) = 30.0;
+	uniform vec3 ground_color: source_color = vec3(0.12, 0.09, 0.07);
+
+group_uniforms sun;
+	uniform float sun_strength = 1.0;
+	uniform float sun_size_deg: hint_range(0.0, 10.0, 0.1) = 0.5;
+	uniform float sun_glow_deg = 10.0;
+	uniform vec3 sun_base_color: source_color = vec3(1.0, 1.0, 1.0);
 
 group_uniforms rayleigh;
 	uniform float rayleigh_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
@@ -303,26 +310,44 @@ float t0, float t1, int view_steps, int sun_steps) {
 	return radiance;
 }
 
-// the final function...
-vec3 get_sky_radiance(vec3 view_dir, vec3 sun_dir) {
-	// ray starts at the camera
-	vec3 ray_origin = PLANET_CENTER + vec3(0.0, PLANET_RADIUS + camera_altitude, 0.0);
+// calculates the proper area in the sky of a celestial object
+float get_planet_mask(vec3 view_dir, vec3 planet_dir, float planet_size_deg, float planet_glow_deg) {
+	float ray_area = clamp(dot(view_dir, planet_dir), -1.0, 1.0);
+	// turn the -1..1 into radians -pi..pi
+	ray_area = acos(ray_area);
+	float planet_radius = radians(planet_size_deg * 0.5);
+	float planet_glow = planet_radius + radians(planet_glow_deg);
+	return smoothstep(planet_glow, planet_radius, ray_area);
+}
 
+// calculates the sun's color based on its elevation
+// the color after it goes through the atmosphere
+vec3 get_sun_transmittance(vec3 ray_origin, vec3 sun_dir) {
+	vec2 ray_segment = get_planet_intersection(ray_origin, sun_dir);
+	// if invalid
+	if (ray_segment.x < 0.0) {
+		return vec3(0.0);
+	}
+	int steps = sun_ray_max_steps;
+	vec3 optical_depth = get_optical_depth(ray_origin, sun_dir, ray_segment.x, ray_segment.y, steps);
+	return get_ray_absorb(optical_depth);
+}
+
+// the final function...
+vec3 get_sky_radiance(vec3 top, vec3 view_dir, vec3 sun_dir, vec3 ray_origin, float exposure_sky) {
 	// the actual segment that passes through the atmosphere only
 	vec2 view_segment = get_planet_intersection(ray_origin, view_dir);
 	// if the ray is invalid
 	if (view_segment.x < 0.0) {
-		return vec3(0.0);
+		return ground_color;
 	}
-	// the top of the world
-	vec3 top = vec3(0.0, 1.0, 0.0);
 	float mu = clamp(dot(top, view_dir), -1.0, 1.0);
 	// the ultimate call
 	vec3 skylight = get_ray_scatter(ray_origin, view_dir, sun_dir,
 		view_segment.x, view_segment.y,
 		get_exp_steps(mu, view_ray_min_steps, view_ray_max_steps),
 		get_exp_steps(mu, sun_ray_min_steps, sun_ray_max_steps));
-	return skylight;
+	return skylight * exposure_sky; // as a color rgb
 }
 
 // Called for every visible pixel in the sky background, as well as all pixels
@@ -333,13 +358,18 @@ void sky() {
 	vec3 top = vec3(0.0,1.0,0.0); // the top of the world/zenith
 	vec3 view_dir = normalize(EYEDIR); // the direction where this pixel is
 	float height = view_dir.y; // how high this pixel is, -1..1
-	float up = clamp(view_dir.y * 0.5 + 0.5, 0.0, 1.0); // shifting height -1..1 to 0..1
+	float up = clamp(view_dir.y * 0.5 + 0.5, 0.0, 1.0); // shifting height -1..1 to 0..1\
+	vec3 camera_origin = PLANET_CENTER + vec3(0.0, PLANET_RADIUS + camera_altitude, 0.0);
 	// sun and moon
 	vec3 sun_dir = top; // default to top
 	if (LIGHT0_ENABLED) { sun_dir = normalize(LIGHT0_DIRECTION); }
 	vec3 moon_dir = top; // default to top
 	if (LIGHT1_ENABLED) { moon_dir = normalize(LIGHT1_DIRECTION); }
 	// get the sky radiance
-	c = get_sky_radiance(view_dir, sun_dir);
-	COLOR = c * exposure;
+	// the camera origin is where the ray should start, ray origin
+	c = get_sky_radiance(top, view_dir, sun_dir, camera_origin, exposure);
+	float sun_mask = get_planet_mask(view_dir, sun_dir, sun_size_deg, sun_glow_deg);
+	vec3 sun_color = sun_base_color * get_sun_transmittance(camera_origin, sun_dir);
+	c += sun_color * sun_mask;
+	COLOR = c;
 }
