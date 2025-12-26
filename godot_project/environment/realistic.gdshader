@@ -22,6 +22,7 @@ group_uniforms sun;
 	uniform vec3 sun_base_color: source_color = vec3(1.0, 1.0, 1.0);
 
 group_uniforms moon;
+	// currently not implemented...
 	uniform float moon_strength: hint_range(0.0, 50.0, 0.1) = 3.0;
 	uniform float moon_size_deg: hint_range(0.0, 20.0, 0.1) = 5.0;
 	uniform float moon_softness: hint_range(0.01, 0.3, 0.01) = 0.03;
@@ -50,9 +51,17 @@ group_uniforms sampling_steps;
 	uniform int sun_ray_steps: hint_range(1, 64, 1) = 3;
 
 group_uniforms importance_sampling;
-	// essentially importance sampling is placing more 
+	// essentially importance sampling is placing more steps where it is important
 	uniform bool enable_importance_sampling = true;
-	uniform float is_factor: hint_range(0.0, 30.0, 0.1) = 10.0;
+	// 'is' for importance sampling
+	// 0 is completely uniform distribution
+	// 1 is extremely unequal distribution
+	uniform float is_factor: hint_range(0.0, 1.0, 0.01) = 0.5;
+	// the relative weights/more or less steps that these three components get
+	uniform float rayleigh_weight: hint_range(-1.0, 1.0, 0.01) = 0.0;
+	uniform float mie_weight: hint_range(-1.0, 1.0, 0.01) = 0.0;
+	uniform float ozone_weight: hint_range(-1.0, 1.0, 0.01) = 0.0;
+	const float IS_WEIGHT_STEPS = 16;
 
 group_uniforms adaptive_step_size;
 	uniform bool enable_adaptive_step = false;
@@ -173,6 +182,7 @@ float get_altitude(vec3 point) {
 // density is how dense the air is or how dense/powerful the scattering is
 // we are modeling the density using an equation and a scale height
 // general model: density = e^(-altitude / scale height)
+// returns 0..1 for thin -> dense atmosphere
 float get_rayleigh_density(float altitude) {
 	return exp(-max(altitude, 0.0) / rayleigh_scale_height);
 }
@@ -227,6 +237,48 @@ int get_adaptive_steps(float mu, int low_steps, int high_steps) {
 	// round up or down properly
 	int steps = int(floor(steps_float + 0.5));
 	return steps;
+}
+
+// simple helper to convert -1..1 to 0.25..4.0
+float get_is_multiplier(float weight) {
+	return exp2(2.0 * weight);
+}
+
+float get_importance_weight(float altitude) {
+	vec3 density = get_atmosphere_density(altitude);
+	vec3 multiplier = vec3(
+		get_is_multiplier(rayleigh_weight),
+		get_is_multiplier(mie_weight),
+		get_is_multiplier(ozone_weight));
+	// weigh importance based on density for now
+	// just a simple dot product will consider both multiplier and density
+	// so we end up with a single weight value
+	float weight = dot(density, multiplier);
+	// clamp to just above 0
+	return max(weight, 1e-6);
+}
+
+// essentially when we're getting more weight, the sample position will be 
+// 'u' is just the location we are taking the sample
+// we are shifting u based on the weight
+// on a high level, we are trying to get a more accurate approximation of the integral of the scatter function
+// by making a second function get_importance_weight() that tells us where the first function is important
+// we now know where the first function is important, but we have limited steps, so how do we evenly distribute it?
+// if we just approximate the integral of the second function get_importance_weight()
+// we can use that area below the function and divide it up so that each step has the same slice of area
+// so the altitudes with less weight has steps that cover a larger horizontal distance x (or in our case, altitude)
+// and the altitudes with more weight would have steps that cover a smaller horizontal distance x (altitude)
+// so yay! we now have steps that are more concentrated on the important parts
+// we can pretty easily find 'u' now because we know where each step starts and ends
+// this little bit of integral approximation concept only took me a couple hours to understand...
+float get_weighted_u(vec3 ray_origin, vec3 ray_dir, float t0, float t1, float u) {
+	float ray_length = t1 - t0;
+	if (ray_length < 0.0) {
+		return u;
+	}
+	
+	
+	
 }
 
 // optical depth
@@ -393,7 +445,7 @@ vec3 get_sun_transmittance(vec3 ray_origin, vec3 view_dir) {
 // the moon function
 // gets the moon phase from new moon -> full moon: 0..1
 float get_moon_phase(vec3 view_dir, vec3 sun_dir, vec3 moon_dir) {
-
+	
 	return 0.0;
 }
 
