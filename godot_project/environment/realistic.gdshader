@@ -27,7 +27,9 @@ group_uniforms moon;
 	uniform float moon_size_deg: hint_range(0.0, 20.0, 0.1) = 5.0;
 	uniform float moon_softness: hint_range(0.01, 0.3, 0.01) = 0.03;
 	uniform float moon_glow_size: hint_range(0.0, 20.0, 0.5) = 1.5;
-	//uniform float moon_glow_
+	uniform float moon_glow_strength: hint_range(0.0, 1.0, 0.01) = 0.25;
+	uniform vec3 moon_color: source_color = vec3(0.95, 0.95, 1.0);
+	uniform float moon_limb_softness: hint_range(0.0, 2.0, 0.01) = 0.35;
 
 group_uniforms rayleigh;
 	uniform float rayleigh_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
@@ -47,7 +49,7 @@ group_uniforms ozone;
 	const vec3 OZONE_BETA = vec3(0.650, 1.881, 0.085) * 1e-6;
 
 group_uniforms sampling_steps;
-	uniform int view_ray_steps: hint_range(1, 64, 1) = 16;
+	uniform int view_ray_steps: hint_range(1, 64, 1) = 8;
 	uniform int sun_ray_steps: hint_range(1, 64, 1) = 3;
 	group_uniforms sampling_steps.importance_sampling;
 		// essentially importance sampling is placing more steps where it is important
@@ -520,10 +522,47 @@ vec3 get_sun_transmittance(vec3 ray_origin, vec3 view_dir) {
 }
 
 // the moon function
-// gets the moon phase from new moon -> full moon: 0..1
-float get_moon_phase(vec3 view_dir, vec3 sun_dir, vec3 moon_dir) {
-	
-	return 0.0;
+// gets how bright the moon is lit at this pixel, 0..1
+float get_moon_lit(vec3 view_dir, vec3 sun_dir, vec3 moon_dir, float size_deg, float limb_softness) {
+	// same thing as the glow functions
+	float angle = clamp(dot(view_dir, moon_dir), -1.0, 1.0);
+	float angle_rad = acos(angle);
+	float disc_radius = radians(size_deg * 0.5); // planet disc in rad
+	// normalize the radius first, r is for radius
+	// trig because the moon doesn't scale lineraly!! 
+	float r = sin(angle_rad) / max(sin(disc_radius), 1e-6);
+	r = clamp(r, 0.0, 1.0);
+	// basically getting the component of view_dir that is in the axis of moon_dir
+	// so right now, the center of the moon would be 1
+	// the edges would be 0 because they have no component in moon_dir
+	vec3 tangent_dir = moon_dir * dot(view_dir, moon_dir);
+	// this is turning that center -> edge 1..0 to 0..1
+	tangent_dir = view_dir - tangent_dir;
+	// now just turn it into a float so we can normalize the direction
+	float tangent_len = length(tangent_dir);
+	if (tangent_len > 1e-6) {
+		// normalize tangent direction so it is just a direction with length 1
+		tangent_dir /= tangent_len;
+	} else {
+		// it will only be 0 at the center, just so we don't divide by 0
+		tangent_dir = vec3(1.0, 0.0, 0.0);
+	}
+	// for a sphere, the formula is x^2 + y^2 + z^2 = 0
+	// radius r = sqrt(x^2 + y^2)
+	// we need to solve for the z here so we know how far up the surface is
+	// so z = sqrt(1 - r^2), clamp to above 0 just in case
+	float z = sqrt(max(0.0, 1.0 - r * r));
+	// then calculate the normal direction at that place
+	vec3 normal = normalize(moon_dir * z + tangent_dir * r);
+	// the 'lit' or how much light the moon is receiving from the sun
+	// just simply calculating the dot product to get how bright each point is
+	float lit = max(dot(normal, sun_dir), 0.0);
+	// the lunar limb, or the slightly soft transition between light and dark
+	// since the moon in not even, from a distance it just looks like softer transition
+	if (limb_softness > 0.0) {
+		lit = pow(lit, 1.0 / (1.0 + limb_softness));
+	}
+	return lit;
 }
 
 // the final function...
