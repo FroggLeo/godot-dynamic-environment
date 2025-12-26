@@ -10,14 +10,14 @@ const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this on
 
 group_uniforms world;
 	uniform float camera_altitude: hint_range(0.5, 99999.0, 0.01) = 0.5;
-	uniform float exposure: hint_range(0.0, 80.0, 0.5) = 13.5;
-	uniform vec3 ground_color: source_color = vec3(0.12, 0.09, 0.07);
+	uniform float exposure: hint_range(0.0, 80.0, 0.5) = 15.0;
+	//uniform vec3 ground_color: source_color = vec3(0.12, 0.09, 0.07);
 
 group_uniforms sun;
 	uniform float sun_strength: hint_range(0.0, 500.0, 1.0) = 300.0;
-	uniform float sun_size_deg: hint_range(0.0, 20.0, 0.1) = 3.0;
-	uniform float sun_softness: hint_range(0.01, 1.0, 0.01) = 0.15;
-	uniform float sun_glow_size: hint_range(0.0, 40.0, 0.1) = 5.0;
+	uniform float sun_size_deg: hint_range(0.1, 20.0, 0.1) = 2.0;
+	uniform float sun_softness: hint_range(0.01, 1.0, 0.01) = 0.2;
+	uniform float sun_glow_size: hint_range(0.0, 40.0, 0.1) = 10.0;
 	uniform float sun_glow_strength: hint_range(0.0, 1.0, 0.01) = 0.3;
 	uniform vec3 sun_base_color: source_color = vec3(1.0, 1.0, 1.0);
 
@@ -49,35 +49,34 @@ group_uniforms ozone;
 group_uniforms sampling_steps;
 	uniform int view_ray_steps: hint_range(1, 64, 1) = 16;
 	uniform int sun_ray_steps: hint_range(1, 64, 1) = 3;
-
-group_uniforms importance_sampling;
-	// essentially importance sampling is placing more steps where it is important
-	uniform bool enable_importance_sampling = true;
-	// 'is' for importance sampling
-	// 0 is completely uniform distribution
-	// 1 is extremely unequal distribution
-	uniform float is_factor: hint_range(0.0, 1.0, 0.01) = 0.5;
-	// the relative weights/more or less steps that these three components get
-	uniform float rayleigh_weight: hint_range(-1.0, 1.0, 0.01) = 0.0;
-	uniform float mie_weight: hint_range(-1.0, 1.0, 0.01) = 0.0;
-	uniform float ozone_weight: hint_range(-1.0, 1.0, 0.01) = 0.0;
-	const int IS_WEIGHT_STEPS = 16;
-
-group_uniforms adaptive_step_size;
-	uniform bool enable_adaptive_step = false;
-	// how extreme the curve, or the difference between high and low samples
-	// higher -> better performance & lower quality
-	uniform float as_factor: hint_range(0.0, 30.0, 0.1) = 10.0;
-	// samples along the camera to the pixel ray
-	// high performance impact
-	// performance / quality
-	// for better quality and no color banding, try 16 & 36
-	uniform int view_ray_min_steps: hint_range(1, 64, 1) = 16;
-	uniform int view_ray_max_steps: hint_range(1, 64, 1) = 36;
-	// sample along the sample to sun ray
-	// best to leave the same, or there will be bands of differing light strengths
-	uniform int sun_ray_min_steps: hint_range(1, 64, 1) = 3;
-	uniform int sun_ray_max_steps: hint_range(1, 64, 1) = 3;
+	group_uniforms sampling_steps.importance_sampling;
+		// essentially importance sampling is placing more steps where it is important
+		// highly recommended, increases the quality massively with less performance cost
+		uniform bool enable_importance_sampling = true;
+		// 'is' for importance sampling
+		// 0 is completely uniform distribution
+		// 1 is extremely unequal distribution
+		uniform float is_factor: hint_range(0.0, 1.0, 0.01) = 1.0;
+		// the relative weights/more or less steps that these three components get
+		uniform float rayleigh_weight: hint_range(-1.0, 1.0, 0.01) = 0.0;
+		uniform float mie_weight: hint_range(-1.0, 1.0, 0.01) = 0.0;
+		uniform float ozone_weight: hint_range(-1.0, 1.0, 0.01) = 0.0;
+		const int IS_WEIGHT_STEPS = 16;
+	group_uniforms sampling_steps.adaptive_step_size;
+		uniform bool enable_adaptive_step = false;
+		// how extreme the curve, or the difference between high and low samples
+		// higher -> better performance & lower quality
+		uniform float as_factor: hint_range(0.0, 30.0, 0.1) = 10.0;
+		// samples along the camera to the pixel ray
+		// high performance impact
+		// performance / quality
+		// for better quality and no color banding, try 16 & 36
+		uniform int view_ray_min_steps: hint_range(1, 64, 1) = 16;
+		uniform int view_ray_max_steps: hint_range(1, 64, 1) = 36;
+		// sample along the sample to sun ray
+		// best to leave the same, or there will be bands of differing light strengths
+		uniform int sun_ray_min_steps: hint_range(1, 64, 1) = 3;
+		uniform int sun_ray_max_steps: hint_range(1, 64, 1) = 3;
 
 // general line-sphere intesection formula
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
@@ -272,9 +271,10 @@ float get_importance_weight(float altitude) {
 // so yay! we now have steps that are more concentrated on the important parts
 // we can pretty easily find 'u' now because we know where each step starts and ends
 // this little bit of integral approximation concept only took me a couple hours to understand...
+// and in technical terms, this strategy is called adaptive non uniform riemann sum
 float get_weighted_u(vec3 ray_origin, vec3 ray_dir, float t0, float t1, float u) {
 	float ray_length = t1 - t0;
-	if (ray_length < 0.0) {
+	if (ray_length <= 0.0) {
 		return u;
 	}
 	// let's call the function that tells us the weight of the scatter function 'w'
@@ -328,16 +328,17 @@ float get_weighted_u(vec3 ray_origin, vec3 ray_dir, float t0, float t1, float u)
 			// the x is at which fraction/percentage inside this step? (assuming linear increase)
 			float step_percent = (target_area - accumulated_area) / max(step_area, 1e-8); // no divide by 0
 			// at what x value did this step start?
-			float step_start = float(j) * w_step_size;
+			float step_start_time = t0 + float(j) * w_step_size;
+			float weighted_time = step_start_time + step_percent * w_step_size;
 			// finally, add up the x, or weighted u value and return
-			return step_start + step_percent * w_step_size;
+			return (weighted_time - t0) / ray_length;
 		}
 		// if no hit, just add up the area and continue
 		accumulated_area += step_area;
 	}
 	// uh oh, somehow there wasn't a hit???
 	// just return something
-	return u;
+	return 1.0;
 }
 
 // optical depth
@@ -482,7 +483,7 @@ float get_celestial_disc(vec3 view_dir, vec3 c_dir, float c_strength, float c_si
 	float angle_rad = acos(angle);
 	float disc_radius = radians(c_size_deg * 0.5); // planet disc in rad
 	// the hard disc
-	float disc = smoothstep(disc_radius, disc_radius * 0.5, angle_rad);
+	float disc = smoothstep(disc_radius, disc_radius * 0.25, angle_rad);
 	// the soft edge
 	float edge = smoothstep(disc_radius * (1.0 + c_softness), disc_radius, angle_rad) - disc;
 	return clamp(disc * c_strength + edge, 0.0, c_strength);

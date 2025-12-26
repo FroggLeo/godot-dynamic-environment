@@ -6,17 +6,16 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6u5e0"]
 shader = ExtResource("2_6u5e0")
 shader_parameter/camera_altitude = 0.5
-shader_parameter/exposure = 13.0
-shader_parameter/ground_color = Color(0.12, 0.09, 0.07, 1)
+shader_parameter/exposure = 15.0
 shader_parameter/sun_strength = 300.0
-shader_parameter/sun_size_deg = 3.0
-shader_parameter/sun_softness = 0.1499999966472
-shader_parameter/sun_glow_size = 5.000000074506
+shader_parameter/sun_size_deg = 2.0000000298024
+shader_parameter/sun_softness = 0.2
+shader_parameter/sun_glow_size = 10.0
 shader_parameter/sun_glow_strength = 0.3
 shader_parameter/sun_base_color = Color(1, 1, 1, 1)
 shader_parameter/moon_strength = 3.0
 shader_parameter/moon_size_deg = 5.0
-shader_parameter/moon_softness = 0.05
+shader_parameter/moon_softness = 0.03
 shader_parameter/moon_glow_size = 1.5
 shader_parameter/rayleigh_strength = 1.0
 shader_parameter/rayleigh_scale_height = 8300.0
@@ -26,11 +25,11 @@ shader_parameter/mie_g = 0.749999983236
 shader_parameter/ozone_strength = 1.0
 shader_parameter/ozone_scale_height = 7000.0
 shader_parameter/ozone_peak_altitude = 20000.0
-shader_parameter/view_ray_steps = 16
+shader_parameter/view_ray_steps = 8
 shader_parameter/sun_ray_steps = 3
 shader_parameter/enable_importance_sampling = true
 shader_parameter/is_factor = 0.999999977648
-shader_parameter/rayleigh_weight = -2.2352000028647012e-08
+shader_parameter/rayleigh_weight = 0.0
 shader_parameter/mie_weight = 0.0
 shader_parameter/ozone_weight = 0.0
 shader_parameter/enable_adaptive_step = false
@@ -56,7 +55,7 @@ time = 0.5954498028089046
 environment = SubResource("Environment_xdsv0")
 
 [node name="SunLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.92605513, 0.37738827, 0, -0.37738827, 0.92605513, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 0.7908498, 0.6120102, 0, -0.61201024, 0.7908498, 0, 0, 0)
 
 [node name="MoonLight" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-1, -3.821371e-15, -8.742278e-08, -8.742278e-08, 4.371139e-08, 1, 0, 1, -4.371139e-08, 0, 1, 0)
