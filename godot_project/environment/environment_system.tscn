@@ -13,12 +13,12 @@ shader_parameter/sun_softness = 0.2
 shader_parameter/sun_glow_size = 10.0
 shader_parameter/sun_glow_strength = 0.3
 shader_parameter/sun_base_color = Color(1, 1, 1, 1)
-shader_parameter/moon_strength = 3.0
+shader_parameter/moon_strength = 1.0000000149012
 shader_parameter/moon_size_deg = 5.0
 shader_parameter/moon_softness = 0.03
 shader_parameter/moon_glow_size = 1.5
-shader_parameter/moon_glow_strength = 0.3
-shader_parameter/moon_color = Color(0.95, 0.95, 1, 1)
+shader_parameter/moon_glow_strength = 0.25
+shader_parameter/moon_base_color = Color(0.95, 0.95, 1, 1)
 shader_parameter/moon_limb_softness = 0.35
 shader_parameter/rayleigh_strength = 1.0
 shader_parameter/rayleigh_scale_height = 8300.0
@@ -58,10 +58,10 @@ time = 0.5954498028089046
 environment = SubResource("Environment_xdsv0")
 
 [node name="SunLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 0.9729858, -0.23086509, 0, 0.23086509, 0.9729858, 0, 0, 0)
 
 [node name="MoonLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(-1, -3.821371e-15, -8.742278e-08, -8.742278e-08, 4.371139e-08, 1, 0, 1, -4.371139e-08, 0, 1, 0)
+transform = Transform3D(-1, -1.1508547e-13, -8.7422826e-08, -2.4914293e-09, 0.99959385, 0.028497368, 8.738733e-08, 0.028497368, -0.99959385, 0, 0, 0)
 light_energy = 0.1
 
 [node name="Moon" type="Node3D" parent="."]

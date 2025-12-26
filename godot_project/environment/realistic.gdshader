@@ -28,7 +28,7 @@ group_uniforms moon;
 	uniform float moon_softness: hint_range(0.01, 0.3, 0.01) = 0.03;
 	uniform float moon_glow_size: hint_range(0.0, 20.0, 0.5) = 1.5;
 	uniform float moon_glow_strength: hint_range(0.0, 1.0, 0.01) = 0.25;
-	uniform vec3 moon_color: source_color = vec3(0.95, 0.95, 1.0);
+	uniform vec3 moon_base_color: source_color = vec3(0.95, 0.95, 1.0);
 	uniform float moon_limb_softness: hint_range(0.0, 2.0, 0.01) = 0.35;
 
 group_uniforms rayleigh;
@@ -508,9 +508,8 @@ float c_glow_size, float c_glow_strength, float disc_mask) {
 	return clamp(glow * c_glow_strength, 0.0, c_glow_strength);
 }
 
-// calculates the sun's color based on its elevation
-// the color after it goes through the atmosphere
-vec3 get_sun_transmittance(vec3 ray_origin, vec3 view_dir) {
+// calculates a celestial's color after all the atmosphere absorption
+vec3 get_celestial_transmittance(vec3 ray_origin, vec3 view_dir) {
 	vec2 ray_segment = get_sunlight_intersection(ray_origin, view_dir);
 	// if invalid, just skip
 	if (ray_segment.x < 0.0) {
@@ -565,7 +564,7 @@ float get_moon_lit(vec3 view_dir, vec3 sun_dir, vec3 moon_dir, float size_deg, f
 	return lit;
 }
 
-// the final function...
+// the final function... of the sky at least
 vec3 get_sky_radiance(vec3 top, vec3 view_dir, vec3 sun_dir, vec3 ray_origin, float exposure_sky) {
 	// the actual segment that passes through the atmosphere only
 	vec2 view_segment = get_planet_intersection(ray_origin, view_dir);
@@ -612,10 +611,22 @@ void sky() {
 	float sun_disc = get_celestial_disc(view_dir, sun_dir, sun_strength, sun_size_deg, sun_softness);
 	float sun_glow = get_celestial_glow(view_dir, sun_dir, sun_size_deg, sun_glow_size, sun_glow_strength, sun_disc);
 	if (sun_disc + sun_glow > 1e-4) {
-		vec3 sun_color = sun_base_color * get_sun_transmittance(camera_origin, view_dir);
+		vec3 sun_color = sun_base_color * get_celestial_transmittance(camera_origin, view_dir);
 		// decrease the glow factor as we reach the horizon, don't want much glow in the night
 		float glow_factor = clamp(dot(top, sun_dir) + 0.15, 0.0, 1.0);
 		c += sun_color * sun_disc + sun_color * sun_glow * glow_factor;
+	}
+	// add the moon
+	float moon_disc = get_celestial_disc(view_dir, moon_dir, 1.0, moon_size_deg, moon_softness);
+	float moon_glow = get_celestial_glow(view_dir, moon_dir, moon_size_deg, moon_glow_size, moon_glow_strength, moon_disc);
+	if (moon_disc + moon_glow > 1e-4) {
+		float moon_lit = get_moon_lit(view_dir, sun_dir, -moon_dir, moon_size_deg, moon_limb_softness);
+		vec3 moon_color = moon_base_color * get_celestial_transmittance(camera_origin, view_dir);
+		float glow_factor = clamp(dot(top, moon_dir) + 0.15, 0.0, 1.0);
+		// subtract by the sun's glow factor, so moon doesn't glow during the day
+		glow_factor -= clamp(dot(top, sun_dir) + 0.15, 0.0, 1.0);
+		c += moon_color * (moon_disc * moon_lit * moon_strength); // moon disc itself
+		c += moon_color * moon_glow * glow_factor;
 	}
 	COLOR = c;
 }
