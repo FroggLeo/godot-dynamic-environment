@@ -46,7 +46,7 @@ group_uniforms moon;
 group_uniforms stars;
 	// beautiful stars
 	uniform bool enable_stars = true;
-	uniform float stars_strength: hint_range(0.0, 5.0, 0.1) = 0.5;
+	uniform float stars_strength: hint_range(0.0, 1.0, 0.01) = 0.1;
 	uniform float stars_max_size: hint_range(0.01, 1.0, 0.001) = 0.35;
 	uniform float stars_min_size: hint_range(0.0, 1.0, 0.001) = 0.3;
 	uniform float stars_density: hint_range(0.1, 8.0, 0.1) = 1.0;
@@ -687,22 +687,46 @@ vec2 dir_to_octuv(vec3 n) {
 // and every example i've seen uses either image texture or some kind of uv mapped stars (and clouds!)
 // just returns an rgb color to be added to the sky
 vec3 get_stars(vec3 view_dir, vec3 moon_dir) {
-	if (!enable_stars) {return vec3(0.0);}
 	// the seed
 	vec4 seed = hash41(stars_seed);
 	float threshold = 0.7 + 0.3 * (1.0 - stars_amount);
 	float max_size = max(stars_max_size, stars_min_size);
 	float min_size = max(stars_min_size, 0.0);
-	// get a grid system still to keep the same stars
-	float grid_scale = 160.0 * stars_density;
-	vec3 position = normalize(view_dir) * grid_scale; // the exact position we're in
-	vec3 grid = floor(position); // which grid we are in
-	vec3 grid_pos = fract(position); // where we are within this grid
-	float spawn = step(threshold, hash14(vec4(grid, seed.x)));
-	
-	return vec3(1.0) * spawn;
+	// woah it's a uv
+	// converting to uv so we know where the view_dir is on the uv field
+	// then return a star or just darkness
+	// uv.x and uv.y goes from 0..1
+	vec2 uv = dir_to_octuv(view_dir);
+	// we turn this new uv into a grid
+	// divide this uv into grid_scale * grid_scale number of grids
+	float grid_scale = 500.0 * stars_density;
+	// we find the location in the entire plane of the view_dir point
+	vec2 plane = uv * grid_scale;
+	// the current grid the point is in
+	vec2 grid = floor(plane);
+	// the location of the point within that grid
+	vec2 g_loc = fract(plane);
+	// now we check if there is a star there by gambling
+	// if the gamble is greater than this threshold then we hit the jackpot!
+	float random = hash13(vec3(grid, seed.x));
+	// spawn a star here (or not)
+	float spawn = step(threshold, random);
+	// the location of the actual star
+	vec2 star_pos = hash23(vec3(grid, seed.y));
+	// calculate the distance between the current point and the actual star's center
+	// so we can do fading out and glow of the star
+	float dis = length(g_loc - star_pos);
+	float size = mix(max_size, min_size, hash13(vec3(grid, seed.z)));
+	float core = smoothstep(size, 0.0, dis);
+	// the final star brightness
+	float brightness = spawn * core;
+	// colors and color mixing
+	float tint = hash13(vec3(grid, seed.w));
+	vec3 warm = vec3(1.0, 0.8243, 0.7821);
+	// final star color
+	vec3 star_color = mix(stars_color, warm, tint * stars_color_variation);
+	return star_color * brightness * stars_strength;
 }
-
 
 // Called for every visible pixel in the sky background, as well as all pixels
 // in the radiance cubemap.
@@ -756,7 +780,7 @@ void sky() {
 			c += moon_color * moon_glow * glow_factor;
 		}
 	}
-	// add the stars
-	c += get_stars(view_dir, moon_dir);
+	vec3 star = get_stars(view_dir, moon_dir);
+	c += max(star - c, 0.0);
 	COLOR = c;
 }
