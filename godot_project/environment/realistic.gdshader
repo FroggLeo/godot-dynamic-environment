@@ -14,6 +14,8 @@ group_uniforms world;
 	//uniform vec3 ground_color: source_color = vec3(0.12, 0.09, 0.07);
 
 group_uniforms sun;
+	// the sun
+	// always based on the first directional light in the scene
 	uniform float sun_strength: hint_range(0.0, 500.0, 1.0) = 300.0;
 	uniform float sun_size_deg: hint_range(0.1, 20.0, 0.1) = 2.0;
 	uniform float sun_softness: hint_range(0.01, 1.0, 0.01) = 0.2;
@@ -22,16 +24,35 @@ group_uniforms sun;
 	uniform vec3 sun_base_color: source_color = vec3(1.0, 1.0, 1.0);
 
 group_uniforms moon;
+	// the moon!
+	// will always be based on the second directional light within the scene
 	uniform bool enable_moon = true;
-	uniform float moon_strength: hint_range(0.0, 20.0, 0.1) = 1.0;
+	uniform float moon_strength: hint_range(0.0, 10.0, 0.1) = 1.0;
 	uniform float moon_size_deg: hint_range(0.0, 20.0, 0.1) = 5.0;
 	uniform float moon_softness: hint_range(0.01, 0.3, 0.01) = 0.03;
-	uniform float moon_earthshine: hint_range(0.0, 0.01, 0.0001) = 0.001;
+	uniform vec3 moon_base_color: source_color = vec3(1.0, 0.988, 0.926);
+	// earthshine! essentially the reflected color coming off the earth on the moon
+	// strength of the earthshine also depends on the moon phase
+	uniform bool enable_earthshine = true;
+	uniform float earthshine_strength: hint_range(0.0, 0.03, 0.0001) = 0.0035;
+	uniform vec3 earthshine_color: source_color = vec3(0.502, 0.652, 1.0);
+	// simple moon glow, which is just a glow around the entire moon
+	// would be better if it glowed around the lit part of the moon instead though
 	uniform bool enable_moon_glow = false;
 	uniform float moon_glow_size: hint_range(0.0, 20.0, 0.5) = 1.5;
 	uniform float moon_glow_strength: hint_range(0.0, 1.0, 0.01) = 0.25;
-	uniform vec3 moon_base_color: source_color = vec3(0.95, 0.95, 1.0);
 	uniform float moon_limb_softness: hint_range(0.0, 2.0, 0.01) = 0.05;
+
+group_uniforms stars;
+	// beautiful stars
+	uniform bool enable_stars = true;
+	uniform float stars_strength: hint_range(0.0, 10.0, 0.1) = 1.0;
+	uniform float stars_density: hint_range(0.1, 8.0, 0.1) = 1.0;
+	uniform float stars_softness: hint_range(0.0, 0.2, 0.001) = 0.03;
+	uniform vec3 stars_color: source_color = vec3(1.0, 0.9725, 0.9059); // cosmic latte
+	uniform float stars_color_variation: hint_range(0.0, 1.0, 0.01) = 0.3;
+	// how much the stars fade when the moon is brighter
+	uniform float stars_moon_fade: hint_range(0.0, 1.0, 0.1);
 
 group_uniforms rayleigh;
 	uniform float rayleigh_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
@@ -389,21 +410,6 @@ vec3 get_ray_absorb(vec3 optical_depth) {
 		optical_depth.z * OZONE_BETA * ozone_strength));
 }
 
-// dims the side opposite of the sun
-// currently unused
-vec3 get_antisolar_absorb(vec3 view_dir, vec3 sun_dir) {
-	vec3 top = vec3(0.0,1.0,0.0);
-	// how close the sun is to the top
-	// zenith to horizon: 0..1
-	float sun_alt = 1.0 - clamp(dot(sun_dir, top) * 0.5 + 0.5, 0.0, 1.0);
-	// how opposite this ray is to the sun
-	// opposite to same: 0..1
-	float opposite = clamp(dot(view_dir, sun_dir) * 0.5 + 0.5, 0.0, 1.0);
-
-	vec3 antisolar_beta = vec3(0.85, 0.90, 0.95);
-	return antisolar_beta * exp(opposite);
-}
-
 // how much scattered light still reaches the camera
 // returns the amount of light you should add back in
 vec3 get_ray_scatter(vec3 ray_origin, vec3 ray_direction, vec3 sun_direction,
@@ -478,6 +484,46 @@ float t0, float t1, int view_steps, int sun_steps) {
 		radiance += view_transmittance * sunlight_transmittance * scatter_coefficient * weighted_step_size;
 	}
 	return radiance;
+}
+
+// the final function... of the sky at least
+vec3 get_sky_radiance(vec3 top, vec3 view_dir, vec3 sun_dir, vec3 ray_origin, float exposure_sky) {
+	// the actual segment that passes through the atmosphere only
+	vec2 view_segment = get_planet_intersection(ray_origin, view_dir);
+	// if the ray is invalid
+	if (view_segment.x < 0.0) {
+		return vec3(0.0);
+	}
+	float mu = clamp(dot(top, view_dir), -1.0, 1.0);
+	int view_steps = view_ray_steps;
+	int sun_steps = sun_ray_steps;
+	if (enable_importance_sampling) {
+		// TODO make the function
+		view_steps = view_steps;
+		sun_steps = sun_steps;
+	} else if (enable_adaptive_step) {
+		view_steps = get_adaptive_steps(mu, view_ray_min_steps, view_ray_max_steps);
+		sun_steps = get_adaptive_steps(mu, sun_ray_min_steps, sun_ray_max_steps);
+	}
+	// the ultimate call
+	vec3 skylight = get_ray_scatter(ray_origin, view_dir, sun_dir,
+		view_segment.x, view_segment.y, view_steps, sun_steps);
+	return skylight * exposure_sky; // as a color rgb
+}
+
+// dims the side opposite of the sun
+// currently unused
+vec3 get_antisolar_absorb(vec3 view_dir, vec3 sun_dir) {
+	vec3 top = vec3(0.0,1.0,0.0);
+	// how close the sun is to the top
+	// zenith to horizon: 0..1
+	float sun_alt = 1.0 - clamp(dot(sun_dir, top) * 0.5 + 0.5, 0.0, 1.0);
+	// how opposite this ray is to the sun
+	// opposite to same: 0..1
+	float opposite = clamp(dot(view_dir, sun_dir) * 0.5 + 0.5, 0.0, 1.0);
+
+	vec3 antisolar_beta = vec3(0.85, 0.90, 0.95);
+	return antisolar_beta * exp(opposite);
 }
 
 // calculates the proper disc in the sky of any celestial
@@ -574,30 +620,26 @@ float get_moon_phase(vec3 sun_dir, vec3 moon_dir) {
 	return clamp(0.5 * dot(sun_dir, -moon_dir) + 0.5, 0.0, 1.0);
 }
 
-// the final function... of the sky at least
-vec3 get_sky_radiance(vec3 top, vec3 view_dir, vec3 sun_dir, vec3 ray_origin, float exposure_sky) {
-	// the actual segment that passes through the atmosphere only
-	vec2 view_segment = get_planet_intersection(ray_origin, view_dir);
-	// if the ray is invalid
-	if (view_segment.x < 0.0) {
-		return vec3(0.0);
-	}
-	float mu = clamp(dot(top, view_dir), -1.0, 1.0);
-	int view_steps = view_ray_steps;
-	int sun_steps = sun_ray_steps;
-	if (enable_importance_sampling) {
-		// TODO make the function
-		view_steps = view_steps;
-		sun_steps = sun_steps;
-	} else if (enable_adaptive_step) {
-		view_steps = get_adaptive_steps(mu, view_ray_min_steps, view_ray_max_steps);
-		sun_steps = get_adaptive_steps(mu, sun_ray_min_steps, sun_ray_max_steps);
-	}
-	// the ultimate call
-	vec3 skylight = get_ray_scatter(ray_origin, view_dir, sun_dir,
-		view_segment.x, view_segment.y, view_steps, sun_steps);
-	return skylight * exposure_sky; // as a color rgb
+// hashes from the internet
+// by david hoskins https://www.shadertoy.com/view/4djSRW
+float hash11(float p) {
+	p = fract(p * 0.1031);
+	p *= p + 33.33;
+	p *= p + p;
+	return fract(p);
 }
+
+float hash13(vec3 p3) {
+	p3 = fract(p3 * 0.1031);
+	p3 += dot(p3, p3.zyx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
+}
+
+vec3 get_stars(vec3 view_dir, vec3 moon_dir) {
+	// woah it's a uv
+	
+}
+
 
 // Called for every visible pixel in the sky background, as well as all pixels
 // in the radiance cubemap.
@@ -634,15 +676,20 @@ void sky() {
 			moon_glow = get_celestial_glow(view_dir, moon_dir, moon_size_deg, moon_glow_size, moon_glow_strength, moon_disc);
 		}
 		if (moon_disc + moon_glow > 1e-4) {
+			// moon sunshine
 			float moon_sun_lit = get_moon_lit(view_dir, sun_dir, moon_dir, moon_size_deg, moon_limb_softness);
-			float moon_earth_lit = get_moon_lit(view_dir, -view_dir, moon_dir, moon_size_deg, moon_limb_softness);
-			float moon_phase = get_moon_phase(sun_dir, moon_dir);
 			vec3 moon_color = moon_base_color * get_celestial_transmittance(camera_origin, view_dir);
+			c += moon_color * (moon_disc * moon_sun_lit * moon_strength); // moon disc itself
+			// simple earthshine
+			if (enable_earthshine) {
+				float moon_earth_lit = get_moon_lit(view_dir, -view_dir, moon_dir, moon_size_deg, moon_limb_softness);
+				float moon_phase = get_moon_phase(sun_dir, moon_dir);
+				c += earthshine_color * moon_disc * moon_earth_lit * earthshine_strength * moon_phase; 
+			}
+			// moon glow
 			float glow_factor = clamp(dot(top, moon_dir) + 0.15, 0.0, 1.0);
 			// subtract by the sun's glow factor, so moon doesn't glow during the day
 			glow_factor -= clamp(dot(top, sun_dir) + 0.15, 0.0, 1.0);
-			c += moon_color * (moon_disc * moon_sun_lit * moon_strength); // moon disc itself
-			c += moon_color * moon_disc * moon_earth_lit * moon_earthshine * moon_phase; // simple earthshine
 			c += moon_color * moon_glow * glow_factor;
 		}
 	}
