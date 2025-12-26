@@ -53,6 +53,7 @@ group_uniforms stars;
 	uniform float stars_color_variation: hint_range(0.0, 1.0, 0.01) = 0.3;
 	// how much the stars fade when the moon is brighter
 	uniform float stars_moon_fade: hint_range(0.0, 1.0, 0.1);
+	uniform float stars_seed: hint_range(0.0, 100.0, 0.0001) = 67.6767;
 
 group_uniforms rayleigh;
 	uniform float rayleigh_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
@@ -620,6 +621,7 @@ float get_moon_phase(vec3 sun_dir, vec3 moon_dir) {
 	return clamp(0.5 * dot(sun_dir, -moon_dir) + 0.5, 0.0, 1.0);
 }
 
+// essentially bootleg random number generators
 // hashes from the internet
 // by david hoskins https://www.shadertoy.com/view/4djSRW
 float hash11(float p) {
@@ -633,6 +635,18 @@ float hash13(vec3 p3) {
 	p3 = fract(p3 * 0.1031);
 	p3 += dot(p3, p3.zyx + 33.33);
 	return fract((p3.x + p3.y) * p3.z);
+}
+
+vec2 hash23(vec3 p3) {
+	p3 = fract(p3 * vec3(0.1031, 0.1030, 0.0973));
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+vec4 hash41(float p) {
+	vec4 p4 = fract(vec4(p) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+	p4 += dot(p4, p4.wzxy + 33.33);
+	return fract((p4.xxyz + p4.yzzw) * p4.zywx);
 }
 
 // simply converts a direction into a octahedral projection uv coordinate
@@ -654,9 +668,51 @@ vec2 dir_to_octuv(vec3 n) {
 	return uv;
 }
 
+// uses a uv coordinate system because it is just more stable 
+// and every example i've seen uses either image texture or some kind of uv mapped stars (and clouds!)
+// just returns an rgb color to be added to the sky
 vec3 get_stars(vec3 view_dir, vec3 moon_dir) {
+	// the seed
+	vec4 seed = hash41(stars_seed);
+	float threshold = 0.95;
+	float softness = 0.02;
+	float max_size = 0.1;
+	float min_size = 0.03;
 	// woah it's a uv
+	// converting to uv so we know where the view_dir is on the uv field
+	// then return a star or just darkness
+	// uv.x and uv.y goes from 0..1
+	vec2 uv = dir_to_octuv(view_dir);
+	// we turn this new uv into a grid
+	// divide this uv into grid_scale * grid_scale number of grids
+	float grid_scale = 600.0;
+	// we find the location in the entire plane of the view_dir point
+	vec2 plane = uv * grid_scale;
+	// the current grid the point is in
+	vec2 grid = floor(plane);
+	// the location of the point within that grid
+	vec2 g_loc = fract(plane);
+	// now we check if there is a star there by gambling
+	// if the gamble is greater than this threshold then we hit the jackpot!
+	float random = hash13(vec3(grid, seed.x));
+	// spawn a star here (or not)
+	float spawn = smoothstep(threshold, threshold + softness, random);
+	// the location of the actual star
+	vec2 star_pos = hash23(vec3(grid, seed.y));
+	// calculate the distance between the current point and the actual star's center
+	// so we can do fading out and glow of the star
+	float dis = length(g_loc - star_pos);
+	float size = mix(max_size, min_size, hash13(vec3(grid, seed.z)));
+	float core = smoothstep(size, 0.0, dis);
+	// the final star brightness
+	float brightness = size * core;
+	// colors and color mixing
+	float tint = hash13(vec3(grid, seed.w));
+	vec3 warm = vec3(1.0, 0.8243, 0.7821);
+	// final star color
+	vec3 star_color = mix(stars_color, warm, tint * stars_color_variation);
 	
+	return star_color * brightness * stars_strength;
 }
 
 
@@ -712,5 +768,6 @@ void sky() {
 			c += moon_color * moon_glow * glow_factor;
 		}
 	}
+	c += get_stars(view_dir, moon_dir);
 	COLOR = c;
 }

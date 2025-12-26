@@ -5,6 +5,55 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6u5e0"]
 shader = ExtResource("2_6u5e0")
+shader_parameter/camera_altitude = 0.5
+shader_parameter/exposure = 15.0
+shader_parameter/sun_strength = 300.0
+shader_parameter/sun_size_deg = 2.0000000298024
+shader_parameter/sun_softness = 0.2
+shader_parameter/sun_glow_size = 10.0
+shader_parameter/sun_glow_strength = 0.3
+shader_parameter/sun_base_color = Color(1, 1, 1, 1)
+shader_parameter/enable_moon = true
+shader_parameter/moon_strength = 1.0
+shader_parameter/moon_size_deg = 5.0
+shader_parameter/moon_softness = 0.03
+shader_parameter/moon_base_color = Color(1, 0.988, 0.926, 1)
+shader_parameter/enable_earthshine = true
+shader_parameter/earthshine_strength = 0.0035
+shader_parameter/earthshine_color = Color(0.502, 0.652, 1, 1)
+shader_parameter/enable_moon_glow = false
+shader_parameter/moon_glow_size = 1.5
+shader_parameter/moon_glow_strength = 0.25
+shader_parameter/moon_limb_softness = 0.05
+shader_parameter/enable_stars = true
+shader_parameter/stars_strength = 1.0
+shader_parameter/stars_density = 1.0
+shader_parameter/stars_softness = 0.03
+shader_parameter/stars_color = Color(1, 0.9725, 0.9059, 1)
+shader_parameter/stars_color_variation = 0.3
+shader_parameter/stars_moon_fade = 0.0
+shader_parameter/stars_seed = 67.6767
+shader_parameter/rayleigh_strength = 1.0
+shader_parameter/rayleigh_scale_height = 8300.0
+shader_parameter/mie_strength = 1.0
+shader_parameter/mie_scale_height = 1200.0
+shader_parameter/mie_g = 0.85
+shader_parameter/ozone_strength = 1.0
+shader_parameter/ozone_scale_height = 7000.0
+shader_parameter/ozone_peak_altitude = 20000.0
+shader_parameter/view_ray_steps = 8
+shader_parameter/sun_ray_steps = 3
+shader_parameter/enable_importance_sampling = true
+shader_parameter/is_factor = 0.999999977648
+shader_parameter/rayleigh_weight = 0.0
+shader_parameter/mie_weight = 0.0
+shader_parameter/ozone_weight = 0.0
+shader_parameter/enable_adaptive_step = false
+shader_parameter/as_factor = 10.0
+shader_parameter/view_ray_min_steps = 16
+shader_parameter/view_ray_max_steps = 36
+shader_parameter/sun_ray_min_steps = 3
+shader_parameter/sun_ray_max_steps = 3
 
 [sub_resource type="Sky" id="Sky_i61be"]
 sky_material = SubResource("ShaderMaterial_6u5e0")
