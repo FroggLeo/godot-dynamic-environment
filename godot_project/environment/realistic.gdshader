@@ -61,7 +61,7 @@ group_uniforms importance_sampling;
 	uniform float rayleigh_weight: hint_range(-1.0, 1.0, 0.01) = 0.0;
 	uniform float mie_weight: hint_range(-1.0, 1.0, 0.01) = 0.0;
 	uniform float ozone_weight: hint_range(-1.0, 1.0, 0.01) = 0.0;
-	const float IS_WEIGHT_STEPS = 16;
+	const int IS_WEIGHT_STEPS = 16;
 
 group_uniforms adaptive_step_size;
 	uniform bool enable_adaptive_step = false;
@@ -258,8 +258,9 @@ float get_importance_weight(float altitude) {
 	return max(weight, 1e-6);
 }
 
-// essentially when we're getting more weight, the sample position will be 
-// 'u' is just the location we are taking the sample
+// when we're getting more weight, the sample position will be more concentrated
+// returns the shifted u value for a given u
+// 'u' is just the location we are taking the sample (called 'time' in the other function)
 // we are shifting u based on the weight
 // on a high level, we are trying to get a more accurate approximation of the integral of the scatter function
 // by making a second function get_importance_weight() that tells us where the first function is important
@@ -276,9 +277,30 @@ float get_weighted_u(vec3 ray_origin, vec3 ray_dir, float t0, float t1, float u)
 	if (ray_length < 0.0) {
 		return u;
 	}
-	
-	
-	
+	// let's call the function that tells us the weight of the scatter function 'w'
+	// w will be approximated first by IS_WEIGHT_STEPS of steps
+	float w_step_size = ray_length / float(IS_WEIGHT_STEPS); // how wide each step is for approximating w
+	float w_area = 0.0; // integral approximation/total area of w
+	// loooooooooooooop for w
+	for (int j = 0; j < IS_WEIGHT_STEPS; j++) {
+		// the u (location of midpoint sample) for this segment/step
+		float w_u = t0 + (0.5 + float(j)) * w_step_size;
+		// get point so we can calculate altitude
+		vec3 point = ray_origin + ray_dir * w_u;
+		// the altitude at this point
+		float altitude = get_altitude(point);
+		// now we calculate the weight here
+		float w = get_importance_weight(altitude);
+		// add the area approximation in this step
+		w_area += w * w_step_size;
+	}
+	// just in case if there isn't really anything significant
+	// we just don't even sample by weight
+	// shouldn't happen normally though, unless the atmosphere is very thin
+	if (w_area <= 1e-6) {
+		return u;
+	}
+	// 
 }
 
 // optical depth
