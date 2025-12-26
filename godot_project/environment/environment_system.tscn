@@ -75,10 +75,10 @@ time = 0.5954498028089046
 environment = SubResource("Environment_xdsv0")
 
 [node name="SunLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.24958591, -0.9683528, 0, 0.9683528, 0.24958591, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 0.13102794, 0.9913786, 0, -0.9913786, 0.13102794, 0, 0, 0)
 
 [node name="MoonLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.8660254, 0.5, 0, -0.5, 0.8660254, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 0.834646, 0.5507867, 0, -0.5507867, 0.834646, 0, 0, 0)
 light_energy = 0.1
 
 [node name="Moon" type="Node3D" parent="."]
