@@ -46,8 +46,11 @@ group_uniforms moon;
 group_uniforms stars;
 	// beautiful stars
 	uniform bool enable_stars = true;
-	uniform float stars_strength: hint_range(0.0, 10.0, 0.1) = 1.0;
+	uniform float stars_strength: hint_range(0.0, 5.0, 0.1) = 0.5;
+	uniform float stars_max_size: hint_range(0.01, 1.0, 0.001) = 0.35;
+	uniform float stars_min_size: hint_range(0.0, 1.0, 0.001) = 0.3;
 	uniform float stars_density: hint_range(0.1, 8.0, 0.1) = 1.0;
+	uniform float stars_amount: hint_range(0.0, 1.0, 0.001) = 0.1;
 	uniform float stars_softness: hint_range(0.0, 0.2, 0.001) = 0.03;
 	uniform vec3 stars_color: source_color = vec3(1.0, 0.9725, 0.9059); // cosmic latte
 	uniform float stars_color_variation: hint_range(0.0, 1.0, 0.01) = 0.3;
@@ -674,10 +677,9 @@ vec2 dir_to_octuv(vec3 n) {
 vec3 get_stars(vec3 view_dir, vec3 moon_dir) {
 	// the seed
 	vec4 seed = hash41(stars_seed);
-	float threshold = 0.95;
-	float softness = 0.02;
-	float max_size = 0.1;
-	float min_size = 0.03;
+	float threshold = 0.7 + 0.3 * (1.0 - stars_amount);
+	float max_size = max(stars_max_size, stars_min_size);
+	float min_size = max(stars_min_size, 0.0);
 	// woah it's a uv
 	// converting to uv so we know where the view_dir is on the uv field
 	// then return a star or just darkness
@@ -685,7 +687,7 @@ vec3 get_stars(vec3 view_dir, vec3 moon_dir) {
 	vec2 uv = dir_to_octuv(view_dir);
 	// we turn this new uv into a grid
 	// divide this uv into grid_scale * grid_scale number of grids
-	float grid_scale = 600.0;
+	float grid_scale = 500.0 * stars_density;
 	// we find the location in the entire plane of the view_dir point
 	vec2 plane = uv * grid_scale;
 	// the current grid the point is in
@@ -696,7 +698,7 @@ vec3 get_stars(vec3 view_dir, vec3 moon_dir) {
 	// if the gamble is greater than this threshold then we hit the jackpot!
 	float random = hash13(vec3(grid, seed.x));
 	// spawn a star here (or not)
-	float spawn = smoothstep(threshold, threshold + softness, random);
+	float spawn = step(threshold, random);
 	// the location of the actual star
 	vec2 star_pos = hash23(vec3(grid, seed.y));
 	// calculate the distance between the current point and the actual star's center
@@ -705,13 +707,12 @@ vec3 get_stars(vec3 view_dir, vec3 moon_dir) {
 	float size = mix(max_size, min_size, hash13(vec3(grid, seed.z)));
 	float core = smoothstep(size, 0.0, dis);
 	// the final star brightness
-	float brightness = size * core;
+	float brightness = spawn * core;
 	// colors and color mixing
 	float tint = hash13(vec3(grid, seed.w));
 	vec3 warm = vec3(1.0, 0.8243, 0.7821);
 	// final star color
 	vec3 star_color = mix(stars_color, warm, tint * stars_color_variation);
-	
 	return star_color * brightness * stars_strength;
 }
 
