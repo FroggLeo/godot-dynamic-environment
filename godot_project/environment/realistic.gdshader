@@ -635,6 +635,25 @@ float hash13(vec3 p3) {
 	return fract((p3.x + p3.y) * p3.z);
 }
 
+// simply converts a direction into a octahedral projection uv coordinate
+// adapted from this source 
+// https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/
+// i have no idea what this logic is... but if it works..
+vec2 dir_to_octuv(vec3 n) {
+	// normalize as always
+	n = normalize(n);
+	n /= (abs(n.x) + abs(n.y) + abs(n.z));
+	vec2 uv = n.xy;
+	if (n.z < 0.0) {
+		// (v.xy >= 0.0 ? 1.0 : -1.0) is just sign(v.xy)
+		// or just uv in our case
+		uv = (1.0 - abs(uv.yx)) * sign(uv);
+	}
+	// just switches it from -1..1 to 0..1
+	uv = uv * 0.5 + 0.5;
+	return uv;
+}
+
 vec3 get_stars(vec3 view_dir, vec3 moon_dir) {
 	// woah it's a uv
 	
