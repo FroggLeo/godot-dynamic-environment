@@ -281,6 +281,8 @@ float get_weighted_u(vec3 ray_origin, vec3 ray_dir, float t0, float t1, float u)
 	// w will be approximated first by IS_WEIGHT_STEPS of steps
 	float w_step_size = ray_length / float(IS_WEIGHT_STEPS); // how wide each step is for approximating w
 	float w_area = 0.0; // integral approximation/total area of w
+	// part 1
+	// find the total area of w
 	// loooooooooooooop for w
 	for (int j = 0; j < IS_WEIGHT_STEPS; j++) {
 		// the u (location of midpoint sample) for this segment/step
@@ -297,10 +299,45 @@ float get_weighted_u(vec3 ray_origin, vec3 ray_dir, float t0, float t1, float u)
 	// just in case if there isn't really anything significant
 	// we just don't even sample by weight
 	// shouldn't happen normally though, unless the atmosphere is very thin
-	if (w_area <= 1e-6) {
+	if (w_area <= 1e-8) {
 		return u;
 	}
-	// 
+	// part 2
+	// find the x value, or weighted u based on the given u
+	// using the given u and total area of w we can find the target area we want
+	// essentially finding the x that corresponds to the accumulated area of the integral function
+	// almost the same thing, but in reverse
+	float target_area = u * w_area;
+	float accumulated_area = 0.0;
+	// almost the same loop, but we are trying to find the x rather than total area
+	for (int j = 0; j < IS_WEIGHT_STEPS; j++) {
+		// the u (location of midpoint sample) for this segment/step
+		float w_u = t0 + (0.5 + float(j)) * w_step_size;
+		// get point so we can calculate altitude
+		vec3 point = ray_origin + ray_dir * w_u;
+		// the altitude at this point
+		float altitude = get_altitude(point);
+		// now we calculate the weight here
+		float w = get_importance_weight(altitude);
+		// get the area approximation in this step
+		float step_area = w * w_step_size;
+		// check if the target area has been reached this step
+		if (accumulated_area + step_area >= target_area) {
+			// now we pinpoint exactly where it is to give back the weighted u
+			// this would just be a linear approximation of the weighted u
+			// the x is at which fraction/percentage inside this step? (assuming linear increase)
+			float step_percent = (target_area - accumulated_area) / max(step_area, 1e-8); // no divide by 0
+			// at what x value did this step start?
+			float step_start = float(j) * w_step_size;
+			// finally, add up the x, or weighted u value and return
+			return step_start + step_percent * w_step_size;
+		}
+		// if no hit, just add up the area and continue
+		accumulated_area += step_area;
+	}
+	// uh oh, somehow there wasn't a hit???
+	// just return something
+	return u;
 }
 
 // optical depth
