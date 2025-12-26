@@ -55,7 +55,7 @@ group_uniforms stars;
 	uniform vec3 stars_color: source_color = vec3(1.0, 0.9725, 0.9059); // cosmic latte
 	uniform float stars_color_variation: hint_range(0.0, 1.0, 0.01) = 0.3;
 	// how much the stars fade when the moon is brighter
-	uniform float stars_moon_fade: hint_range(0.0, 1.0, 0.01) = 0.02;
+	uniform float stars_moon_fade: hint_range(0.0, 1.0, 0.01) = 0.6;
 	uniform float stars_seed: hint_range(0.0, 100.0, 0.0001) = 67.6767;
 
 group_uniforms rayleigh;
