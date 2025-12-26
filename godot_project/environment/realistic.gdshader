@@ -11,7 +11,7 @@ const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this on
 group_uniforms world;
 	uniform float camera_altitude: hint_range(0.5, 99999.0, 0.01) = 0.5;
 	uniform float exposure: hint_range(0.0, 80.0, 0.5) = 15.0;
-	//uniform vec3 ground_color: source_color = vec3(0.12, 0.09, 0.07);
+	uniform vec3 base_sky_color: source_color = vec3(0.0, 0.0039, 0.0275);
 
 group_uniforms sun;
 	// the sun
@@ -46,7 +46,7 @@ group_uniforms moon;
 group_uniforms stars;
 	// beautiful stars
 	uniform bool enable_stars = true;
-	uniform float stars_strength: hint_range(0.0, 1.0, 0.01) = 0.1;
+	uniform float stars_strength: hint_range(0.0, 1.0, 0.01) = 0.05;
 	uniform float stars_max_size: hint_range(0.01, 1.0, 0.001) = 0.35;
 	uniform float stars_min_size: hint_range(0.0, 1.0, 0.001) = 0.3;
 	uniform float stars_density: hint_range(0.1, 8.0, 0.1) = 1.0;
@@ -55,7 +55,7 @@ group_uniforms stars;
 	uniform vec3 stars_color: source_color = vec3(1.0, 0.9725, 0.9059); // cosmic latte
 	uniform float stars_color_variation: hint_range(0.0, 1.0, 0.01) = 0.3;
 	// how much the stars fade when the moon is brighter
-	uniform float stars_moon_fade: hint_range(0.0, 1.0, 0.1);
+	uniform float stars_moon_fade: hint_range(0.0, 1.0, 0.01) = 0.02;
 	uniform float stars_seed: hint_range(0.0, 100.0, 0.0001) = 67.6767;
 
 group_uniforms rayleigh;
@@ -686,7 +686,7 @@ vec2 dir_to_octuv(vec3 n) {
 // uses a uv coordinate system because it is just more stable 
 // and every example i've seen uses either image texture or some kind of uv mapped stars (and clouds!)
 // just returns an rgb color to be added to the sky
-vec3 get_stars(vec3 view_dir, vec3 moon_dir) {
+vec3 get_stars(vec3 view_dir) {
 	// the seed
 	vec4 seed = hash41(stars_seed);
 	float threshold = 0.7 + 0.3 * (1.0 - stars_amount);
@@ -732,7 +732,7 @@ vec3 get_stars(vec3 view_dir, vec3 moon_dir) {
 // in the radiance cubemap.
 void sky() {
 	// environment stuff
-	vec3 c = vec3(0.0); // final color that will be applied
+	vec3 c = base_sky_color; // final color that will be applied
 	vec3 top = vec3(0.0,1.0,0.0); // the top of the world/zenith
 	vec3 view_dir = normalize(EYEDIR); // the direction where this pixel is
 	float height = view_dir.y; // how high this pixel is, -1..1
@@ -745,7 +745,7 @@ void sky() {
 	if (LIGHT1_ENABLED) { moon_dir = normalize(LIGHT1_DIRECTION); }
 	// get the sky radiance
 	// the camera origin is where the ray should start, ray origin
-	c = get_sky_radiance(top, view_dir, sun_dir, camera_origin, exposure);
+	c += get_sky_radiance(top, view_dir, sun_dir, camera_origin, exposure);
 	// add the sun
 	float sun_disc = get_celestial_disc(view_dir, sun_dir, sun_strength, sun_size_deg, sun_softness);
 	float sun_glow = get_celestial_glow(view_dir, sun_dir, sun_size_deg, sun_glow_size, sun_glow_strength, sun_disc);
@@ -754,6 +754,13 @@ void sky() {
 		// decrease the glow factor as we reach the horizon, don't want much glow in the night
 		float glow_factor = clamp(dot(top, sun_dir) + 0.15, 0.0, 1.0);
 		c += sun_color * sun_disc + sun_color * sun_glow * glow_factor;
+	}
+	// add stars
+	float moon_phase = enable_moon ? get_moon_phase(sun_dir, moon_dir) : 0.0;
+	vec3 star = get_stars(view_dir) - stars_strength * moon_phase * stars_moon_fade;
+	if (length(star) > 1e-4) {
+		vec3 star_color = star * get_celestial_transmittance(camera_origin, view_dir);
+		c += max(star_color - c, 0.0);
 	}
 	// add the moon
 	if (enable_moon) {
@@ -777,10 +784,8 @@ void sky() {
 			float glow_factor = clamp(dot(top, moon_dir) + 0.15, 0.0, 1.0);
 			// subtract by the sun's glow factor, so moon doesn't glow during the day
 			glow_factor -= clamp(dot(top, sun_dir) + 0.15, 0.0, 1.0);
-			c += moon_color * moon_glow * glow_factor;
+			c += max(moon_color * moon_glow * glow_factor - c, 0.0);
 		}
 	}
-	vec3 star = get_stars(view_dir, moon_dir);
-	c += max(star - c, 0.0);
 	COLOR = c;
 }

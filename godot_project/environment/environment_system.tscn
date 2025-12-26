@@ -7,6 +7,7 @@
 shader = ExtResource("2_6u5e0")
 shader_parameter/camera_altitude = 0.5
 shader_parameter/exposure = 15.0
+shader_parameter/base_sky_color = Color(0, 0.0039, 0.0275, 1)
 shader_parameter/sun_strength = 300.0
 shader_parameter/sun_size_deg = 2.0000000298024
 shader_parameter/sun_softness = 0.2
@@ -34,7 +35,7 @@ shader_parameter/stars_amount = 0.1
 shader_parameter/stars_softness = 0.03
 shader_parameter/stars_color = Color(1, 0.9725, 0.9059, 1)
 shader_parameter/stars_color_variation = 0.3
-shader_parameter/stars_moon_fade = 0.0
+shader_parameter/stars_moon_fade = 0.60000000894072
 shader_parameter/stars_seed = 67.6767
 shader_parameter/rayleigh_strength = 1.0
 shader_parameter/rayleigh_scale_height = 8300.0
@@ -74,10 +75,10 @@ time = 0.5954498028089046
 environment = SubResource("Environment_xdsv0")
 
 [node name="SunLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.8965713, -0.44289923, 0, 0.44289923, 0.8965713, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 0.24958591, -0.9683528, 0, 0.9683528, 0.24958591, 0, 0, 0)
 
 [node name="MoonLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(-1, -1.0367797e-13, -8.74228e-08, -8.2247205e-08, 0.3389679, 0.9407979, 2.9633423e-08, 0.9407979, -0.3389679, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 0.8660254, 0.5, 0, -0.5, 0.8660254, 0, 0, 0)
 light_energy = 0.1
 
 [node name="Moon" type="Node3D" parent="."]
