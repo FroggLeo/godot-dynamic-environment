@@ -421,18 +421,35 @@ float t0, float t1, int view_steps, int sun_steps) {
 	// get the phases/scattering values
 	float rayleigh_phase = get_rayleigh_phase(mu);
 	float mie_phase = get_mie_phase(mu, mie_g);
+	// keep track of the previous time so we don't accidently go back
+	float previous_time = t0;
 	// calculate scattering
 	for (int i = 0; i < 64; i++) {
 		if (i >= view_steps) {break;}
 		// first transmittance
 		// the factor loss of sunlight from scatter point to the camera
-		// same thing as optical depth loop above
-		float time = t0 + (0.5 + float(i)) * step_size;
+		// getting the u so we can send it over if needed
+		float u = (0.5 + float(i)) / float(view_steps);
+		// now we calculate the weighted u, if applicable
+		if (enable_importance_sampling && is_factor > 0.0) {
+			float u_weighted = get_weighted_u(ray_origin, ray_direction, t0, t1, u);
+			// mix it up! by the user defined factor of course
+			u = mix(u, u_weighted, is_factor);
+		}
+		// here is the actual time we're using
+		float time = t0 + u * ray_length;
+		// just to make sure we're not going backwards
+		time = max(time, previous_time);
+		// the new step size for this step
+		// replaces the original step_size
+		float weighted_step_size = time - previous_time;
+		// and then just update the previous time for next iteration
+		previous_time = time;
 		vec3 point = ray_origin + ray_direction * time;
 		float altitude = get_altitude(point);
 		float rayleigh_density = get_rayleigh_density(altitude);
 		vec3 atmosphere_density = get_atmosphere_density(altitude);
-		view_optical_depth += atmosphere_density * step_size;
+		view_optical_depth += atmosphere_density * weighted_step_size;
 		vec3 view_transmittance = get_ray_absorb(view_optical_depth);
 		// second transmittance
 		// the factor loss of the sunlight from top of atmosphere to the scatter point
@@ -453,7 +470,7 @@ float t0, float t1, int view_steps, int sun_steps) {
 		// then multiply that area (now the amount of light) by how much makes it through the two stages
 		// the two stages being loss from top of atmosphere -> scatter point and
 		// loss from scatter point -> camera
-		radiance += view_transmittance * sunlight_transmittance * scatter_coefficient * step_size;
+		radiance += view_transmittance * sunlight_transmittance * scatter_coefficient * weighted_step_size;
 	}
 	return radiance;
 }
