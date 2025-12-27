@@ -6,13 +6,14 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6u5e0"]
 shader = ExtResource("2_6u5e0")
 shader_parameter/camera_altitude = 0.5
-shader_parameter/exposure = 15.0
+shader_parameter/exposure = 10.0
 shader_parameter/base_sky_color = Color(0, 0.0039, 0.0275, 1)
+shader_parameter/atm_density = 1.0
 shader_parameter/sun_strength = 300.0
 shader_parameter/sun_size_deg = 2.0000000298024
 shader_parameter/sun_softness = 0.2
-shader_parameter/sun_glow_size = 10.0
-shader_parameter/sun_glow_strength = 0.3
+shader_parameter/sun_glow_size = 4.40000006556528
+shader_parameter/sun_glow_strength = 1.5
 shader_parameter/sun_base_color = Color(1, 1, 1, 1)
 shader_parameter/enable_moon = true
 shader_parameter/moon_strength = 1.0
@@ -37,11 +38,11 @@ shader_parameter/stars_color = Color(1, 0.9725, 0.9059, 1)
 shader_parameter/stars_color_variation = 0.3
 shader_parameter/stars_moon_fade = 0.6
 shader_parameter/stars_seed = 67.6767
-shader_parameter/rayleigh_strength = 1.2116919309916252
+shader_parameter/rayleigh_strength = 1.0
 shader_parameter/rayleigh_scale_height = 8300.0
-shader_parameter/mie_strength = 1.2857964664279649
+shader_parameter/mie_strength = 1.0
 shader_parameter/mie_scale_height = 1200.0
-shader_parameter/mie_g = 0.804098893992839
+shader_parameter/mie_g = 0.85
 shader_parameter/ozone_strength = 1.0
 shader_parameter/ozone_scale_height = 7000.0
 shader_parameter/ozone_peak_altitude = 20000.0
@@ -75,7 +76,7 @@ environment = NodePath("WorldEnvironment")
 environment = SubResource("Environment_xdsv0")
 
 [node name="SunLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -0.9999999, 0.00024425983, 0, -0.00024425983, -0.9999999, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 0.012321651, 0.99992406, 0, -0.99992406, 0.012321651, 0, 0, 0)
 
 [node name="MoonLight" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.834646, 0.5507867, 0, -0.5507867, 0.834646, 0, 0, 0)

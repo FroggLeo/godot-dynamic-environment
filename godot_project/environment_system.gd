@@ -75,7 +75,7 @@ func _update_atmosphere() -> void:
 	mat.set_shader_parameter("rayleigh_strength", rayleigh_strength)
 	mat.set_shader_parameter("mie_strength", mie_strength)
 	mat.set_shader_parameter("mie_g", mie_g)
-	mat.set_shader_parameter("ozone_strengh", ozone_strength)
+	mat.set_shader_parameter("ozone_strength", ozone_strength)
 
 func _get_light_dir(light: DirectionalLight3D) -> Vector3:
 	return (-light.global_transform.basis.z).normalized()

@@ -12,6 +12,8 @@ group_uniforms world;
 	uniform float camera_altitude: hint_range(0.5, 99999.0, 0.01) = 0.5;
 	uniform float exposure: hint_range(0.0, 80.0, 0.5) = 15.0;
 	uniform vec3 base_sky_color: source_color = vec3(0.0, 0.0039, 0.0275);
+	// density of the atmosphere
+	uniform float atm_density: hint_range(0.01, 2.0, 0.01) = 1.0;
 
 group_uniforms sun;
 	// the sun
@@ -19,8 +21,8 @@ group_uniforms sun;
 	uniform float sun_strength: hint_range(0.0, 500.0, 1.0) = 300.0;
 	uniform float sun_size_deg: hint_range(0.1, 20.0, 0.1) = 2.0;
 	uniform float sun_softness: hint_range(0.01, 1.0, 0.01) = 0.2;
-	uniform float sun_glow_size: hint_range(0.0, 40.0, 0.1) = 10.0;
-	uniform float sun_glow_strength: hint_range(0.0, 1.0, 0.01) = 0.3;
+	uniform float sun_glow_size: hint_range(0.0, 40.0, 0.1) = 3.0;
+	uniform float sun_glow_strength: hint_range(0.0, 3.0, 0.05) = 1.5;
 	uniform vec3 sun_base_color: source_color = vec3(1.0, 1.0, 1.0);
 
 group_uniforms moon;
@@ -231,7 +233,7 @@ float get_ozone_density(float altitude) {
 
 // overall function for all 3 densities
 vec3 get_atmosphere_density(float altitude) {
-	return vec3(get_rayleigh_density(altitude), get_mie_density(altitude), get_ozone_density(altitude));
+	return vec3(get_rayleigh_density(altitude), get_mie_density(altitude), get_ozone_density(altitude)) * atm_density;
 }
 
 // phase is light scatter
@@ -577,10 +579,11 @@ vec3 get_sun(vec3 top, vec3 view_dir, vec3 sun_dir, vec3 camera_origin) {
 	float sun_disc = get_celestial_disc(view_dir, sun_dir, sun_strength, sun_size_deg, sun_softness);
 	float sun_glow = get_celestial_glow(view_dir, sun_dir, sun_size_deg, sun_glow_size, sun_glow_strength, sun_disc);
 	if (sun_disc + sun_glow > 1e-4) {
-		vec3 sun_color = sun_base_color * get_celestial_transmittance(camera_origin, view_dir);
+		vec3 sun_transmittance = get_celestial_transmittance(camera_origin, view_dir);
+		vec3 sun_color = sun_base_color * sun_transmittance;
 		// decrease the glow factor as we reach the horizon, don't want much glow in the night
 		float glow_factor = clamp(dot(top, sun_dir) + 0.15, 0.0, 1.0);
-		return sun_color * sun_disc + sun_color * sun_glow * glow_factor;
+		return sun_color * sun_disc + sun_color * sun_glow * glow_factor * sun_transmittance;
 	}
 	return vec3(0.0);
 }
@@ -650,7 +653,8 @@ vec3 get_moon(vec3 top, vec3 view_dir, vec3 sun_dir, vec3 moon_dir, vec3 camera_
 	if (moon_disc + moon_glow > 1e-4) {
 		// moon sunshine
 		float moon_sun_lit = get_moon_lit(view_dir, sun_dir, moon_dir, moon_size_deg, moon_limb_softness);
-		vec3 moon_color = moon_base_color * get_celestial_transmittance(camera_origin, view_dir);
+		vec3 moon_transmittance = get_celestial_transmittance(camera_origin, view_dir);
+		vec3 moon_color = moon_base_color * moon_transmittance;
 		color += moon_color * (moon_disc * moon_sun_lit * moon_strength); // moon disc itself
 		// simple earthshine
 		if (enable_earthshine) {
@@ -662,7 +666,7 @@ vec3 get_moon(vec3 top, vec3 view_dir, vec3 sun_dir, vec3 moon_dir, vec3 camera_
 		float glow_factor = clamp(dot(top, moon_dir) + 0.15, 0.0, 1.0);
 		// subtract by the sun's glow factor, so moon doesn't glow during the day
 		glow_factor -= clamp(dot(top, sun_dir) + 0.15, 0.0, 1.0);
-		return color + moon_color * moon_glow * glow_factor;
+		return color + moon_color * moon_glow * glow_factor * moon_transmittance;
 	}
 	return vec3(0.0);
 }
