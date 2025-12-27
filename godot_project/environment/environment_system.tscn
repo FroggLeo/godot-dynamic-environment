@@ -53,11 +53,11 @@ shader_parameter/mie_g = 0.85
 shader_parameter/ozone_strength = 1.0
 shader_parameter/ozone_scale_height = 7000.0
 shader_parameter/ozone_peak_altitude = 20000.0
-shader_parameter/view_ray_steps = 8
+shader_parameter/view_ray_steps = 32
 shader_parameter/sun_ray_steps = 3
 shader_parameter/enable_importance_sampling = true
 shader_parameter/is_factor = 0.999999977648
-shader_parameter/rayleigh_weight = 0.0
+shader_parameter/rayleigh_weight = -1.0
 shader_parameter/mie_weight = 0.0
 shader_parameter/ozone_weight = 0.0
 shader_parameter/enable_adaptive_step = false
@@ -83,7 +83,7 @@ environment = NodePath("WorldEnvironment")
 environment = SubResource("Environment_xdsv0")
 
 [node name="SunLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.46934822, 0.8830132, 0, -0.8830132, 0.46934822, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 0.99891526, -0.046565987, 0, 0.046565987, 0.99891526, 0, 0, 0)
 
 [node name="MoonLight" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.834646, 0.5507867, 0, -0.5507867, 0.834646, 0, 0, 0)

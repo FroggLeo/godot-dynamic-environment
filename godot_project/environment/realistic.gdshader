@@ -87,7 +87,7 @@ group_uniforms ozone;
 	const vec3 OZONE_BETA = vec3(0.650, 1.881, 0.085) * 1e-6;
 
 group_uniforms sampling_steps;
-	uniform int view_ray_steps: hint_range(1, 64, 1) = 8;
+	uniform int view_ray_steps: hint_range(1, 64, 1) = 32;
 	uniform int sun_ray_steps: hint_range(1, 64, 1) = 3;
 	group_uniforms sampling_steps.importance_sampling;
 		// essentially importance sampling is placing more steps where it is important
@@ -450,7 +450,7 @@ float t0, float t1, int view_steps, int sun_steps) {
 	// keep track of the previous time so we don't accidently go back
 	float previous_time = t0;
 	// calculate scattering
-	for (int i = 0; i < 64; i++) {
+	for (int i = 0; i < 8; i++) {
 		if (i >= view_steps) {break;}
 		// first transmittance
 		// the factor loss of sunlight from scatter point to the camera
