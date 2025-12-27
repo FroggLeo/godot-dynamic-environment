@@ -54,35 +54,66 @@ func _update_atmosphere() -> void:
 	var hu: float = clamp(humidity, 0, 1)
 	# 0..500 to 0..1
 	var aq: float = clamp(aqi / 500, 0, 1)
-	# 0..50 to 1..0
-	var vi: float = clamp((50 - visibility_km) / 50, 0, 1)
+	# 0..50 to 0..1
+	var vi: float = clamp(visibility_km / 50, 0, 1)
 	# -35..45 to 0..1
 	var te: float = clamp((temperature_c + 35) / 80, 0, 1)
 	# 150..450 to 0..1
 	var oz: float = clamp((ozone_du - 150) / 300, 0, 1)
 	# aqi
 	# affects rayleigh, mie, mie g, density
-	# aqi 500 ~ 8.0, 8.0, 0.85, 3.0
-	# aqi low ~ return to normal / no effect
-	# tempearture
+	# aqi 500 ~ 8.0, 8.0, 0.80, 3.0
+	# aqi low ~ 1.0, 1.0, 0.85, 1.0 (no effect)
+	var aq_curve := pow(aq, 1.67)
+	# temperature
 	# affects rayleigh, mie, mie g, ozone
 	# high ~ 1.2, 8.0, 0.6, 1.0
 	# low ~ 0.9, 0.4, 0.89, 4.0
+	var te_curve := te
 	# humidity
 	# mostly the same (?) as temperature
 	# affects mie, mie g
 	# high ~ 2.0, 0.7
 	# low ~ 0.9, 0.49
+	var hu_curve := smoothstep(0.3, 1.0, hu)
 	# visibility is just fog
-	# need to implement fog in shader
-	var rayleigh_strength: float = 
-	# mie
-	var mie_strength: float = 
-	var mie_g: float = 
+	var vi_curve := vi
 	# ozone
-	var ozone_strength: float = 
-	# atmosphere density increases as haze increase
-	var atm_density: float = 
+	# well, affects ozone
+	var oz_curve := pow(oz, 1.2)
+	# affected mostly by aqi and a little by temp
+	var r_aq := lerp(1, 8, aq_curve)
+	var r_te := lerp(0.9, 1.2, te_curve)
+	var rayleigh_strength: float = r_aq * r_te
+	rayleigh_strength = clamp(rayleigh_strength, 0.3, 8.0)
+	# affected mostly by aqi and temp, a bit humidity
+	var m_aq := lerp(1, 8, aq_curve)
+	var m_te := lerp(0.4, 8, te_curve)
+	var m_hu := lerp(0.9, 2, hu_curve)
+	var mie_strength: float = m_aq * m_te * m_hu
+	rayleigh_strength = clamp(rayleigh_strength, 0.3, 8.0)
+	# affected by aqi, temp, humidity
+	var g_aq := lerp(0.87/0.85, 0.80/0.85, aq_curve)
+	var g_te := lerp(0.89/0.85, 0.60/0.85, te_curve)
+	var g_hu := lerp(0.49/0.85, 0.70/0.85, hu_curve)
+	var mie_g: float = 0.85 * g_aq * g_te * g_hu
+	mie_g = clamp(mie_g, 0.48, 0.92)
+	# affected mostly by ozone, then temp
+	var o_te := lerp(1.0, 4.0, te_curve)
+	var o_oz := lerp(0.2, 5.0, oz_curve)
+	var ozone_strength: float = o_te * o_oz
+	ozone_strength = clamp(ozone_strength, 0.2, 5.0)
+	# affected by aqi
+	var d_aq := lerp(1.0, 3.0, aq_curve)
+	var d_te := lerp(1.5, 0.5, te_curve)
+	var atm_density: float = d_aq * d_te
+	# affected by visibility
+	var fa_vi := lerp(0.0, 0.6, vi_curve)
+	var fp_vi := lerp(0.0, 6.0, vi_curve)
+	var fd_vi := lerp(1.5, 4.0, vi_curve)
+	var fog_amount: float = 
+	var fog_power: float = 
+	var fog_density: float = 
 	# update shader now
 	mat.set_shader_parameter("camera_altitude", camera_altitude)
 	mat.set_shader_parameter("rayleigh_strength", rayleigh_strength)
