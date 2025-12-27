@@ -5,8 +5,8 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6u5e0"]
 shader = ExtResource("2_6u5e0")
-shader_parameter/camera_altitude = 1999.999955307176
-shader_parameter/exposure = 11.0
+shader_parameter/camera_altitude = 1.0
+shader_parameter/exposure = 20.0
 shader_parameter/base_sky_color = Color(0, 0.0039, 0.0275, 1)
 shader_parameter/atm_density = 1.0
 shader_parameter/enable_artistic_effects = false
@@ -87,7 +87,7 @@ environment = NodePath("WorldEnvironment")
 environment = SubResource("Environment_xdsv0")
 
 [node name="SunLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.9999999, -8.7376684e-05, 0, 8.7376684e-05, 0.9999999, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, -0.5850568, 0.8109924, 0, -0.8109924, -0.5850568, 0, 0, 0)
 
 [node name="MoonLight" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.834646, 0.5507867, 0, -0.5507867, 0.834646, 0, 0, 0)

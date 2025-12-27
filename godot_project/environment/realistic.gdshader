@@ -9,7 +9,7 @@ const vec3 PLANET_CENTER = vec3(0.0, -PLANET_RADIUS, 0.0); // assumes y=0 is pla
 const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this one uses the karman line
 
 group_uniforms world;
-	uniform float camera_altitude: hint_range(0.5, 99999.0, 0.01) = 0.5;
+	uniform float camera_altitude: hint_range(1.0, 99999.0, 0.01) = 1.0;
 	uniform float exposure: hint_range(0.0, 80.0, 0.5) = 11.0;
 	uniform vec3 base_sky_color: source_color = vec3(0.0, 0.0039, 0.0275);
 	// density of the atmosphere
@@ -77,7 +77,7 @@ group_uniforms rayleigh;
 group_uniforms mie;
 	uniform float mie_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
 	uniform float mie_scale_height: hint_range(500.0, 15000.0, 50.0) = 1200.0;
-	uniform float mie_g: hint_range(0.0, 0.99, 0.01) = 0.85;
+	uniform float mie_g: hint_range(0.0, 0.999, 0.001) = 0.85;
 	const vec3 MIE_BETA = vec3(3.996) * 1e-6;
 
 group_uniforms ozone;

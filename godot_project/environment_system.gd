@@ -17,7 +17,7 @@ extends Node3D
 @export_range(-35.0, 45.0, 0.1) var temperature_c := 30.0: set = _set_temperature
 @export_range(150.0, 450.0, 1.0) var ozone_du := 300.0: set = _set_ozone
 
-@export_range(0.5, 99999.0, 0.01) var camera_altitude := 0.5: set = _set_altitude
+@export_range(1.0, 99999.0, 0.01) var camera_altitude := 0.5: set = _set_altitude
 
 @onready var Sun := $SunLight # directional light of sun
 @onready var Moon := $MoonLight # directional light of moon
@@ -43,6 +43,10 @@ func _resolve_sky_material() -> void:
 	if sky and sky.sky_material is ShaderMaterial:
 		mat = sky.sky_material
 
+# notes
+# should have exposure be ~20 around noon, but drop off as we reach sunset
+# will be implemented here in the script
+
 func _update_atmosphere() -> void:
 	if not mat:
 		return
@@ -56,11 +60,19 @@ func _update_atmosphere() -> void:
 	var te: float = clamp((temperature_c + 35) / 80, 0, 1)
 	# 150..450 to 0..1
 	var oz: float = clamp((ozone_du - 150) / 300, 0, 1)
-	# as aqi increases
+	# aqi
 	# affects rayleigh, mie, mie g, density
-	# super yellow/orange
-	# aqi 500 ~ 8.0, 8.0, 0.85, 2.0
-	# as 
+	# aqi 500 ~ 8.0, 8.0, 0.85, 3.0
+	# aqi low ~ return to normal / no effect
+	# tempearture
+	# affects rayleigh, mie, mie g, ozone
+	# high ~ 1.2, 8.0, 0.6, 1.0
+	# low ~ 0.9, 0.4, 0.89, 4.0
+	# humidity
+	# mostly the same (?) as temperature
+	# affects mie, mie g
+	# high ~ 2.0, 0.7
+	# low ~ 0.9, 0.49
 	var rayleigh_strength: float = lerp(0.7, 1.7, )
 	# mie
 	var mie_strength: float = lerp(0.2, 5.0, haze);
