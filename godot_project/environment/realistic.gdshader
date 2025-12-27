@@ -10,10 +10,10 @@ const float ATMOSPHERE_HEIGHT = 100000.0; // how high the atmosphere is, this on
 
 group_uniforms world;
 	uniform float camera_altitude: hint_range(0.5, 99999.0, 0.01) = 0.5;
-	uniform float exposure: hint_range(0.0, 80.0, 0.5) = 15.0;
+	uniform float exposure: hint_range(0.0, 80.0, 0.5) = 11.0;
 	uniform vec3 base_sky_color: source_color = vec3(0.0, 0.0039, 0.0275);
 	// density of the atmosphere
-	uniform float atm_density: hint_range(0.01, 2.0, 0.01) = 1.0;
+	uniform float atm_density: hint_range(0.01, 4.0, 0.01) = 1.0;
 
 group_uniforms sun;
 	// the sun
@@ -773,6 +773,39 @@ vec3 get_stars(vec3 view_dir) {
 	// final star color
 	vec3 star_color = mix(stars_color, warm, tint * stars_color_variation);
 	return star_color * brightness * stars_strength;
+}
+
+// artistic filters below!
+// YIQ hue shift from here
+// https://agatedragon.blog/2024/04/02/hue-shift-shader/
+vec3 rgb_to_yiq(vec3 color) {
+	const mat3 RGB_YIQ = mat3(
+		vec3(0.299, 0.596, 0.211),
+		vec3(0.587, -0.274, -0.523),
+		vec3(0.114, -0.322, 0.312)
+	);
+	return RGB_YIQ * color;
+}
+
+vec3 yiq_to_rgb(vec3 color) {
+	const mat3 YIQ_RGB = mat3 (
+		vec3(1.0, 1.0, 1.0),
+		vec3(0.956, -0.272, -1.106),
+		vec3(0.621, -0.647, 1.703)
+	);
+	return YIQ_RGB * color;
+}
+
+vec3 hue_shift_yiq(vec3 color, float shift) {
+	vec3 yiq = rgb_to_yiq(color);
+	float sinshift = sin(shift);
+	float cosshift = cos(shift);
+	mat2 rotation = mat2(
+		vec2(cosshift, -sinshift),
+		vec2(sinshift, cosshift)
+	);
+	yiq.yz *= rotation;
+	return yiq_to_rgb(yiq);
 }
 
 // Called for every visible pixel in the sky background, as well as all pixels
