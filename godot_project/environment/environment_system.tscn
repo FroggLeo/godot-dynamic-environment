@@ -37,11 +37,11 @@ shader_parameter/stars_color = Color(1, 0.9725, 0.9059, 1)
 shader_parameter/stars_color_variation = 0.3
 shader_parameter/stars_moon_fade = 0.6
 shader_parameter/stars_seed = 67.6767
-shader_parameter/rayleigh_strength = 1.0
+shader_parameter/rayleigh_strength = 1.2116919309916252
 shader_parameter/rayleigh_scale_height = 8300.0
-shader_parameter/mie_strength = 1.0
+shader_parameter/mie_strength = 1.2857964664279649
 shader_parameter/mie_scale_height = 1200.0
-shader_parameter/mie_g = 0.85
+shader_parameter/mie_g = 0.804098893992839
 shader_parameter/ozone_strength = 1.0
 shader_parameter/ozone_scale_height = 7000.0
 shader_parameter/ozone_peak_altitude = 20000.0
@@ -66,18 +66,17 @@ sky_material = SubResource("ShaderMaterial_6u5e0")
 background_mode = 2
 sky = SubResource("Sky_i61be")
 
-[node name="EnvironmentSystem" type="Node3D"]
+[node name="EnvironmentSystem" type="Node3D" node_paths=PackedStringArray("environment")]
 script = ExtResource("1_xq3th")
 paused = true
+environment = NodePath("WorldEnvironment")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_xdsv0")
 
 [node name="SunLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -0.9971327, 0.07567477, 0, -0.07567477, -0.9971327, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, -0.9999999, 0.00024425983, 0, -0.00024425983, -0.9999999, 0, 0, 0)
 
 [node name="MoonLight" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.834646, 0.5507867, 0, -0.5507867, 0.834646, 0, 0, 0)
 light_energy = 0.1
-
-[node name="Moon" type="Node3D" parent="."]
