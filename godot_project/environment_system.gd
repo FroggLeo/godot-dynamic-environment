@@ -73,17 +73,16 @@ func _update_atmosphere() -> void:
 	# affects mie, mie g
 	# high ~ 2.0, 0.7
 	# low ~ 0.9, 0.49
-	var rayleigh_strength: float = lerp(0.7, 1.7, )
+	# visibility is just fog
+	# need to implement fog in shader
+	var rayleigh_strength: float = 
 	# mie
-	var mie_strength: float = lerp(0.2, 5.0, haze);
-	# just put in the clean air mie g and polluted mie g
-	var mie_g: float = lerp(0.76, 0.93, clamp(haze * 0.9 + hu * 0.2, 0, 1))
+	var mie_strength: float = 
+	var mie_g: float = 
 	# ozone
-	var ozone_strength: float = lerp(0.8, 1.2, oz)
-	# temperature effect on haze
-	mie_strength *= lerp(0.9, 1.1, te)
+	var ozone_strength: float = 
 	# atmosphere density increases as haze increase
-	var atm_density: float = lerp(0.6, 2.3, haze)
+	var atm_density: float = 
 	# update shader now
 	mat.set_shader_parameter("camera_altitude", camera_altitude)
 	mat.set_shader_parameter("rayleigh_strength", rayleigh_strength)
@@ -91,6 +90,9 @@ func _update_atmosphere() -> void:
 	mat.set_shader_parameter("mie_g", mie_g)
 	mat.set_shader_parameter("ozone_strength", ozone_strength)
 	mat.set_shader_parameter("atm_density", atm_density)
+	mat.set_shader_parameter("fog_amount", fog_amount)
+	mat.set_shader_parameter("fog_horizon_power", fog_power)
+	mat.set_shader_parameter("fog_density", fog_density)
 
 func _get_light_dir(light: DirectionalLight3D) -> Vector3:
 	return (-light.global_transform.basis.z).normalized()
