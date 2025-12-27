@@ -15,6 +15,15 @@ group_uniforms world;
 	// density of the atmosphere
 	uniform float atm_density: hint_range(0.01, 4.0, 0.01) = 1.0;
 
+group_uniforms artistic_effects;
+	uniform bool enable_artistic_effects = false;
+	uniform float overall_saturation: hint_range(0.0, 3.0, 0.01) = 1.0;
+	uniform float horizon_saturation: hint_range(0.0, 3.0, 0.01) = 1.0;
+	uniform float horizon_size: hint_range(0.1, 30.0, 0.1) = 20.0;
+	uniform float horizon_hue_1: hint_range(0.0, 1.0, 0.01) = 0.80;
+	uniform float horizon_hue_2: hint_range(0.0, 2.0, 0.01) = 0.0;
+	uniform float sun_transition: hint_range(0.1, 30.0, 0.1) = 5.50;
+
 group_uniforms sun;
 	// the sun
 	// always based on the first directional light in the scene
@@ -63,7 +72,7 @@ group_uniforms stars;
 group_uniforms rayleigh;
 	uniform float rayleigh_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
 	uniform float rayleigh_scale_height: hint_range(1000.0, 20000.0, 50.0) = 8300.0;
-	const vec3 RAYLEIGH_BETA = vec3(5.802, 13.558, 33.100) * 1e-6; // correct ratios, values not true
+	const vec3 RAYLEIGH_BETA = vec3(5.802, 13.558, 33.100) * 1e-6;
 
 group_uniforms mie;
 	uniform float mie_strength: hint_range(0.0, 8.0, 0.1) = 1.0;
@@ -833,8 +842,16 @@ vec3 saturate_color(vec3 color, float sat) {
 }
 
 // returns a filtered color based on the artistic effects
-vec3 get_artistic_effects(vec3 color, float hue_shift, float saturation_value) {
-	
+vec3 get_artistic_effects(vec3 top, vec3 view_dir, vec3 sun_dir, vec3 color) {
+	if (!enable_artistic_effects) {return color;}
+	float horizon = 1.0 - dot(view_dir, top);
+	horizon = clamp(pow(horizon, horizon_size), 0.0, 1.0);
+	float sun_elev = 1.0 - dot(sun_dir, top);
+	sun_elev = clamp(pow(sun_elev, sun_transition), 0.0, 1.0);
+	vec3 color2 = hue_shift_yiq(color, horizon_hue_1 * TAU);
+	vec3 color3 = hue_shift_yiq(color, horizon_hue_2 * TAU);
+	color = mix(color, mix(color2, color3, sun_elev), horizon);
+	return color;
 }
 
 // Called for every visible pixel in the sky background, as well as all pixels
@@ -870,5 +887,6 @@ void sky() {
 		c += moon_color;
 		//c += max(moon_color - c, 0.0);
 	}
+	c = get_artistic_effects(top, view_dir, sun_dir, c);
 	COLOR = c;
 }
