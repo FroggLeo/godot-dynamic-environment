@@ -88,6 +88,10 @@ group_uniforms ozone;
 
 group_uniforms sampling_steps;
 	uniform int view_ray_steps: hint_range(1, 64, 1) = 32;
+	// truncate the sampling so that less of the lower atmosphere is sampled
+	// improves performance AND looks way better
+	uniform bool enable_truncate = true;
+	uniform int view_ray_truncate: hint_range(1, 64, 1) = 12;
 	uniform int sun_ray_steps: hint_range(1, 64, 1) = 3;
 	group_uniforms sampling_steps.importance_sampling;
 		// essentially importance sampling is placing more steps where it is important
@@ -428,7 +432,7 @@ vec3 get_ray_absorb(vec3 optical_depth) {
 // how much scattered light still reaches the camera
 // returns the amount of light you should add back in
 vec3 get_ray_scatter(vec3 ray_origin, vec3 ray_direction, vec3 sun_direction,
-float t0, float t1, int view_steps, int sun_steps) {
+float t0, float t1, int view_steps, int truncated_steps, int sun_steps) {
 	// length of the ray that is inside the atmosphere
 	float ray_length = t1 - t0;
 	// if the ray is invalid, negative or no length
@@ -449,9 +453,11 @@ float t0, float t1, int view_steps, int sun_steps) {
 	float mie_phase = get_mie_phase(mu, mie_g);
 	// keep track of the previous time so we don't accidently go back
 	float previous_time = t0;
+	// truncate steps if needed
+	int true_steps = min(truncated_steps, view_steps);
 	// calculate scattering
-	for (int i = 0; i < 8; i++) {
-		if (i >= view_steps) {break;}
+	for (int i = 0; i < 64; i++) {
+		if (i >= true_steps) {break;}
 		// first transmittance
 		// the factor loss of sunlight from scatter point to the camera
 		// getting the u so we can send it over if needed
@@ -511,18 +517,15 @@ vec3 get_sky_radiance(vec3 top, vec3 view_dir, vec3 sun_dir, vec3 ray_origin, fl
 	}
 	float mu = clamp(dot(top, view_dir), -1.0, 1.0);
 	int view_steps = view_ray_steps;
+	int truncate_view_steps = enable_truncate ? view_ray_truncate : view_steps;
 	int sun_steps = sun_ray_steps;
-	if (enable_importance_sampling) {
-		// TODO make the function
-		view_steps = view_steps;
-		sun_steps = sun_steps;
-	} else if (enable_adaptive_step) {
+	if (enable_adaptive_step) {
 		view_steps = get_adaptive_steps(mu, view_ray_min_steps, view_ray_max_steps);
 		sun_steps = get_adaptive_steps(mu, sun_ray_min_steps, sun_ray_max_steps);
 	}
 	// the ultimate call
 	vec3 skylight = get_ray_scatter(ray_origin, view_dir, sun_dir,
-		view_segment.x, view_segment.y, view_steps, sun_steps);
+		view_segment.x, view_segment.y, view_steps, truncate_view_steps, sun_steps);
 	return skylight * exposure_sky; // as a color rgb
 }
 
