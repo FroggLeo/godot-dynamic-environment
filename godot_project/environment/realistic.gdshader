@@ -88,11 +88,17 @@ group_uniforms ozone;
 
 group_uniforms sampling_steps;
 	uniform int view_ray_steps: hint_range(1, 64, 1) = 32;
-	// truncate the sampling so that less of the lower atmosphere is sampled
-	// improves performance AND looks way better
-	uniform bool enable_truncate = true;
-	uniform int view_ray_truncate: hint_range(1, 64, 1) = 12;
 	uniform int sun_ray_steps: hint_range(1, 64, 1) = 3;
+	group_uniforms sampling_steps.truncate_view_rays;
+		// truncate the sampling so that less of the lower atmosphere is sampled
+		// improves performance AND looks way better
+		// ** will look bad if very high up in atmosphere
+		uniform bool enable_truncate = true;
+		uniform int view_ray_truncate: hint_range(1, 64, 1) = 12;
+		// fade out the truncating effect as altitude increases
+		// the view ray steps will slowly decrease to match truncated amount
+		uniform bool enable_truncate_fade = true;
+		uniform float truncate_fade_height: hint_range(10.0, 99999.0, 1.0) = 1000.0;
 	group_uniforms sampling_steps.importance_sampling;
 		// essentially importance sampling is placing more steps where it is important
 		// highly recommended, increases the quality massively with less performance cost
@@ -518,6 +524,11 @@ vec3 get_sky_radiance(vec3 top, vec3 view_dir, vec3 sun_dir, vec3 ray_origin, fl
 	float mu = clamp(dot(top, view_dir), -1.0, 1.0);
 	int view_steps = view_ray_steps;
 	int truncate_view_steps = enable_truncate ? view_ray_truncate : view_steps;
+	if (enable_truncate_fade && enable_truncate) {
+		// gets the altitude from 0 to 1
+		float altitude01 = smoothstep(truncate_fade_height, 0, get_altitude(ray_origin));
+		view_steps = int(mix(float(truncate_view_steps), float(view_steps), altitude01));
+	}
 	int sun_steps = sun_ray_steps;
 	if (enable_adaptive_step) {
 		view_steps = get_adaptive_steps(mu, view_ray_min_steps, view_ray_max_steps);
