@@ -808,6 +808,35 @@ vec3 hue_shift_yiq(vec3 color, float shift) {
 	return yiq_to_rgb(yiq);
 }
 
+// hsv converter from https://godotshaders.com/shader/hsv-adjustment/
+vec3 rgb_to_hsv(vec3 color) {
+    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    vec4 p = mix(vec4(color.bg, K.wz), vec4(color.gb, K.xy), step(color.b, color.g));
+    vec4 q = mix(vec4(p.xyw, color.r), vec4(color.r, p.yzx), step(p.x, color.r));
+
+    float d = q.x - min(q.w, q.y);
+    float e = 1.0e-10;
+    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+vec3 hsv_to_rgb(vec3 color) {
+    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    vec3 p = abs(fract(color.xxx + K.xyz) * 6.0 - K.www);
+    return color.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), color.y);
+}
+
+// saturation adjustment
+// magic numbers from here https://en.wikipedia.org/wiki/Relative_luminance
+vec3 saturate_color(vec3 color, float sat) {
+	float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
+	return mix(vec3(luma), color, sat);
+}
+
+// returns a filtered color based on the artistic effects
+vec3 get_artistic_effects(vec3 color, float hue_shift, float saturation_value) {
+	
+}
+
 // Called for every visible pixel in the sky background, as well as all pixels
 // in the radiance cubemap.
 void sky() {
