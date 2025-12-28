@@ -63,6 +63,7 @@ There are some things I would like to add to a future version of this shader sys
 ## Honorable Mentions
 I saw this project as my excuse to finally learn gdshader, and honestly, it was a success! My initial inspriation was:
 * [Sky++ by Ansol](https://godotshaders.com/shader/sky-sorta/)
+
 Some code snippets I have used in my shader include information from:
 * [Shader Hashes by Dave Hoskins](https://www.shadertoy.com/view/4djSRW)
 * [Octahedron Vector Encoding by Krzysztof Narkowicz](https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/)
