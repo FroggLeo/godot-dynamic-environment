@@ -121,7 +121,7 @@ func time_to_24h(envtime: float) -> String:
 	var total_minutes := int(envtime * 24 * 60 + 18 * 60) % (24 * 60)
 	var hours := int(total_minutes / 60.0)
 	var minutes := total_minutes % 60
-	return str(hours) + ":" + str(minutes)
+	return "%02d:%02d" % [hours, minutes]
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:

@@ -21,9 +21,12 @@ extends Node3D
 @export_range(1.0, 99999.0, 0.01) var camera_altitude := 1.0:
 	set(v): camera_altitude = v; _update_atmosphere()
 
+@export_range(0.0, 1.0, 0.001) var stars_rotation := 0.0:
+	set(v): stars_rotation = v; if mat: mat.set_shader_parameter("stars_pitch", stars_rotation)
+
 @export var day_length: float = 120.0
 @export var moon_length: float = 29.5
-@export_range(0.0, 1.0, 0.001) var time: float = 0.0:
+@export_range(0.0, 1.0, 0.001) var time: float = 0.5:
 	set(v): time = v; _update_sun_moon()
 @export_range(0.0, 1.0, 0.001) var moon_time: float = 0.0:
 	set(v): moon_time = v; _update_sun_moon()
@@ -79,6 +82,7 @@ func _update_sun_moon():
 	moonLight.rotation.x = moon_angle
 	var moon_tilt = 39.5
 	moonLight.rotation.y = moon_tilt
+	stars_rotation = time
 
 # should have exposure be ~20 around noon, but drop off as we reach sunset
 # will be implemented here in the script

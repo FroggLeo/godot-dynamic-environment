@@ -48,6 +48,8 @@ group_uniforms moon;
 group_uniforms stars;
 	// beautiful stars
 	uniform bool enable_stars = true;
+	// rotate the stars
+	uniform float stars_pitch: hint_range(0.0, 1.0, 0.001) = 0.0;
 	uniform float stars_strength: hint_range(0.0, 1.0, 0.01) = 0.05;
 	uniform float stars_max_size: hint_range(0.01, 1.0, 0.001) = 0.35;
 	uniform float stars_min_size: hint_range(0.0, 1.0, 0.001) = 0.3;
@@ -762,10 +764,25 @@ vec2 dir_to_octuv(vec3 n) {
 	return uv;
 }
 
+// rotation of vector
+// used to rotate the stars easily
+// could allow more freedoms of rotation later on
+vec3 rotate_x(vec3 vector, float angle) {
+	float sina = sin(angle);
+	float cosa = cos(angle);
+	return vec3(
+		vector.x,
+		cosa * vector.y - sina * vector.z,
+		sina * vector.y + cosa * vector.z
+	);
+}
+
 // uses a uv coordinate system because it is just more stable
 // and every example i've seen uses either image texture or some kind of uv mapped stars (and clouds!)
 // just returns an rgb color to be added to the sky
 vec3 get_stars(vec3 view_dir) {
+	// rotate the view
+	vec3 rotated_view = rotate_x(normalize(view_dir), stars_pitch * TAU);
 	// the seed
 	vec4 seed = hash41(stars_seed);
 	float threshold = 0.7 + 0.3 * (1.0 - stars_amount);
@@ -775,7 +792,7 @@ vec3 get_stars(vec3 view_dir) {
 	// converting to uv so we know where the view_dir is on the uv field
 	// then return a star or just darkness
 	// uv.x and uv.y goes from 0..1
-	vec2 uv = dir_to_octuv(view_dir);
+	vec2 uv = dir_to_octuv(rotated_view);
 	// we turn this new uv into a grid
 	// divide this uv into grid_scale * grid_scale number of grids
 	float grid_scale = 500.0 * stars_density;
@@ -806,6 +823,7 @@ vec3 get_stars(vec3 view_dir) {
 	vec3 star_color = mix(stars_color, warm, tint * stars_color_variation);
 	return star_color * brightness * stars_strength;
 }
+
 
 // artistic filters below!
 // YIQ hue shift from here
@@ -910,11 +928,13 @@ void sky() {
 	// add the sun
 	c += get_sun(top, view_dir, sun_dir, camera_origin);
 	// add stars
-	float moon_phase = get_moon_phase(sun_dir, moon_dir);
-	vec3 star = get_stars(view_dir) - stars_strength * moon_phase * stars_moon_fade;
-	if (length(star) > 1e-4) {
-		vec3 star_color = star * get_celestial_transmittance(camera_origin, view_dir);
-		c += max(star_color - c, 0.0);
+	if (enable_stars) {
+		float moon_phase = get_moon_phase(sun_dir, moon_dir);
+		vec3 star = get_stars(view_dir) - stars_strength * moon_phase * stars_moon_fade;
+		if (length(star) > 1e-4) {
+			vec3 star_color = star * get_celestial_transmittance(camera_origin, view_dir);
+			c += max(star_color - c, 0.0);
+		}
 	}
 	// add the moon
 	if (enable_moon) {
