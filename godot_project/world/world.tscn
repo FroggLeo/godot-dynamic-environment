@@ -5,3 +5,5 @@
 [node name="Node3D" type="Node3D"]
 
 [node name="EnvironmentSystem" parent="." instance=ExtResource("1_6xmxd")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0, 0)
+time = 0.0

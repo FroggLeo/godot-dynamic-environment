@@ -630,7 +630,7 @@ float get_moon_lit(vec3 view_dir, vec3 sun_dir, vec3 moon_dir, float size_deg, f
 	float angle_rad = acos(angle);
 	float disc_radius = radians(size_deg * 0.5); // planet disc in rad
 	// normalize the radius first, r is for radius
-	// trig because the moon doesn't scale lineraly!! 
+	// trig because the moon doesn't scale lineraly!!
 	float r = sin(angle_rad) / max(sin(disc_radius), 1e-6);
 	r = clamp(r, 0.0, 1.0);
 	// basically getting the component of view_dir that is in the axis of moon_dir
@@ -692,7 +692,7 @@ vec3 get_moon(vec3 top, vec3 view_dir, vec3 sun_dir, vec3 moon_dir, vec3 camera_
 		if (enable_earthshine) {
 			float moon_earth_lit = get_moon_lit(view_dir, -view_dir, moon_dir, moon_size_deg, moon_limb_softness);
 			float moon_phase = get_moon_phase(sun_dir, moon_dir);
-			color += earthshine_color * moon_disc * moon_earth_lit * earthshine_strength * moon_phase; 
+			color += earthshine_color * moon_disc * moon_earth_lit * earthshine_strength * moon_phase * moon_transmittance;
 		}
 		// moon glow
 		float glow_factor = clamp(dot(top, moon_dir) + 0.15, 0.0, 1.0);
@@ -744,7 +744,7 @@ vec4 hash41(float p) {
 }
 
 // simply converts a direction into a octahedral projection uv coordinate
-// adapted from this source 
+// adapted from this source
 // https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/
 // i have no idea what this logic is... but if it works..
 vec2 dir_to_octuv(vec3 n) {
@@ -762,7 +762,7 @@ vec2 dir_to_octuv(vec3 n) {
 	return uv;
 }
 
-// uses a uv coordinate system because it is just more stable 
+// uses a uv coordinate system because it is just more stable
 // and every example i've seen uses either image texture or some kind of uv mapped stars (and clouds!)
 // just returns an rgb color to be added to the sky
 vec3 get_stars(vec3 view_dir) {

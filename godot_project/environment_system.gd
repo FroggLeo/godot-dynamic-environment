@@ -22,8 +22,15 @@ extends Node3D
 
 @export_range(1.0, 99999.0, 0.01) var camera_altitude := 0.5: set = _set_altitude
 
-@onready var Sun := $SunLight # directional light of sun
-@onready var Moon := $MoonLight # directional light of moon
+@onready var sunPitch := $SunPitch
+@onready var sunYaw := $SunPitch/SunYaw
+@onready var sunRoll := $SunPitch/SunYaw/SunRoll
+@onready var sunLight := $SunPitch/SunYaw/SunRoll/SunLight # directional light of sun
+
+@onready var moonPitch := $MoonPitch
+@onready var moonYaw := $MoonPitch/MoonYaw
+@onready var moonRoll := $MoonPitch/MoonYaw/MoonRoll
+@onready var moonLight := $MoonPitch/MoonYaw/MoonRoll/MoonLight # directional light of moon
 
 # the sky shader material
 var mat: ShaderMaterial
@@ -31,12 +38,15 @@ var top = Vector3(0.0, 1.0, 0.0)
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	print("readying..")
+	Sun.rotation = Vector3(PI/2, 0, 0)
 	_resolve_sky_material()
 	_update_atmosphere()
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
 	if paused:
+		_ready()
 		return
 	_resolve_sky_material()
 	_update_atmosphere()
@@ -58,11 +68,12 @@ func _update_clock() -> void:
 # should have exposure be ~20 around noon, but drop off as we reach sunset
 # will be implemented here in the script
 func _update_sun(delta: float) -> void:
-	#var sun_dir = -Sun.transform.basis.z
-	#var how_horizon = clamp(sun_dir.dot(top), 0.0, 1.0)
-	Sun.rotation.y += delta
-	#var exposure = lerp(20.0, 10.0, how_horizon)
-	#mat.set_shader_parameter("exposure", exposure)
+	if !Sun: return
+	var sun_dir = -Sun.global_transform.basis.z
+	var how_horizon = clamp(sun_dir.dot(top), 0.0, 1.0)
+	Sun.rotation.x = time * TAU
+	var exposure = lerp(20.0, 10.0, how_horizon)
+	mat.set_shader_parameter("exposure", exposure)
 	
 
 func _update_atmosphere() -> void:
@@ -142,6 +153,9 @@ func _update_atmosphere() -> void:
 	mat.set_shader_parameter("fog_amount", fog_amount)
 	mat.set_shader_parameter("fog_horizon_power", fog_power)
 	mat.set_shader_parameter("fog_density", fog_density)
+
+func _rotate_sun() -> void:
+	
 
 func _get_light_dir(light: DirectionalLight3D) -> Vector3:
 	return (-light.global_transform.basis.z).normalized()
