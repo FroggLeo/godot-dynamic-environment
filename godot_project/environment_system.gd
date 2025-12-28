@@ -89,6 +89,7 @@ func _update_sun_moon():
 func _update_exposure() -> void:
 	var sun_dir = _get_light_dir(sunLight)
 	var how_horizon = clamp(sun_dir.dot(-top), 0.0, 1.0)
+	how_horizon = pow(how_horizon, 7.0)
 	var exposure = lerp(10.0, 20.0, how_horizon)
 	mat.set_shader_parameter("exposure", exposure)
 
