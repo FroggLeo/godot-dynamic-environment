@@ -37,18 +37,25 @@ theme_override_constants/margin_bottom = 10
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/PanelContainer/MarginContainer"]
 layout_mode = 2
 
-[node name="p" type="HBoxContainer" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="pausemargins" type="MarginContainer" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_constants/margin_bottom = 5
 
-[node name="vpause" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/p"]
+[node name="p" type="HBoxContainer" parent="UI/PanelContainer/MarginContainer/VBoxContainer/pausemargins"]
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="vpause" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/pausemargins/p"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 0
 text = "Pause"
 
-[node name="pause" type="CheckButton" parent="UI/PanelContainer/MarginContainer/VBoxContainer/p"]
+[node name="pause" type="CheckButton" parent="UI/PanelContainer/MarginContainer/VBoxContainer/pausemargins/p"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 0
 button_pressed = true
 
 [node name="ti" type="HBoxContainer" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
@@ -95,7 +102,7 @@ layout_mode = 2
 min_value = 1.0
 max_value = 1200.0
 step = 0.1
-value = 20.0
+value = 120.0
 scrollable = false
 
 [node name="h" type="HBoxContainer" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
@@ -215,7 +222,12 @@ step = 0.5
 value = 300.0
 scrollable = false
 
-[node name="Button" type="Button" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="resetmargin" type="MarginContainer" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 5
+
+[node name="reset" type="Button" parent="UI/PanelContainer/MarginContainer/VBoxContainer/resetmargin"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Reset to Default"
 
@@ -240,9 +252,15 @@ layout_mode = 2
 
 [node name="laltitude" type="Label" parent="UI/PanelContainer2/MarginContainer/a"]
 layout_mode = 2
-text = "Altitude "
+text = "Altitude"
 
-[node name="altitude" type="HSlider" parent="UI/PanelContainer2/MarginContainer/a"]
+[node name="altmargin" type="MarginContainer" parent="UI/PanelContainer2/MarginContainer/a"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_right = 5
+
+[node name="altitude" type="HSlider" parent="UI/PanelContainer2/MarginContainer/a/altmargin"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -254,7 +272,7 @@ value = 1.0
 
 [node name="valtitude" type="Label" parent="UI/PanelContainer2/MarginContainer/a"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(85, 0)
+custom_minimum_size = Vector2(77, 0)
 layout_mode = 2
-text = "99999.0m"
+text = "uhoh0.0m"
 horizontal_alignment = 2

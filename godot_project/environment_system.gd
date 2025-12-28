@@ -26,7 +26,7 @@ extends Node3D
 @export_range(1.0, 99999.0, 0.01) var camera_altitude := 1.0:
 	set(v): camera_altitude = v; _update_atmosphere()
 
-@export var day_length: float = 20.0
+@export var day_length: float = 120.0
 @export var moon_length: float = 29.5
 @export_range(0.0, 1.0, 0.001) var time: float = 0.0:
 	set(v): time = v; _update_sun_moon()
