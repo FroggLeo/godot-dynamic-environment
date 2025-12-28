@@ -1,4 +1,4 @@
-@tool
+#@tool
 extends Node3D
 
 # +x / -x
@@ -26,12 +26,12 @@ extends Node3D
 @export_range(1.0, 99999.0, 0.01) var camera_altitude := 0.5:
 	set(v): camera_altitude = v; _update_atmosphere()
 
-@export var day_length: float = 10
+@export var day_length: float = 20.0
 @export var moon_length: float = 29.5
 @export_range(0.0, 1.0, 0.001) var time: float = 0.0:
-	set(v): time = v;
+	set(v): time = v; _update_sun_moon()
 @export_range(0.0, 1.0, 0.001) var moon_time: float = 0.0:
-	set(v): moon_time = v;
+	set(v): moon_time = v; _update_sun_moon()
 
 @onready var sunLight := $SunLight # directional light of sun
 
@@ -44,6 +44,10 @@ var top = Vector3(0.0, 1.0, 0.0)
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	print("readying..")
+	time = 0.5
+	moon_time = 0.5
+	sunLight.rotation = Vector3(0,0,0)
+	moonLight.rotation = Vector3(0,0,0)
 	_resolve_sky_material()
 	_update_atmosphere()
 
@@ -53,6 +57,7 @@ func _process(delta: float) -> void:
 		return
 	_update_clock(delta)
 	_resolve_sky_material()
+	_update_sun_moon()
 	_update_atmosphere()
 	_update_exposure()
 
@@ -68,12 +73,18 @@ func _resolve_sky_material() -> void:
 func _update_clock(delta: float) -> void:
 	var time_change = delta / day_length
 	time += time_change if time < 1.0 else -1.0
+	moon_time += time_change / moon_length if moon_time < 1.0 else -1.0
 
 func _update_sun_moon(): 
+	if !sunLight or !moonLight: return
 	var sun_angle = TAU * time
 	sunLight.rotation.x = sun_angle
 	var sun_tilt = 34.5
-	sunTilt.
+	sunLight.rotation.y = sun_tilt
+	var moon_angle = sun_angle + TAU * moon_time
+	moonLight.rotation.x = moon_angle
+	var moon_tilt = 39.5
+	moonLight.rotation.y = moon_tilt
 
 # should have exposure be ~20 around noon, but drop off as we reach sunset
 # will be implemented here in the script
