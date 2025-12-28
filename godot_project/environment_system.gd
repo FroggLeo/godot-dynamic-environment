@@ -10,14 +10,28 @@ extends Node3D
 
 @export var environment: WorldEnvironment
 @export var sky_material: ShaderMaterial
-@export_range(0.0, 1.0, 0.001) var humidity := 0.35: set = _set_humidity
-@export_range(0.0, 500.0, 1.0) var aqi := 35.0: set = _set_aqi
-@export_range(0.1, 50.0, 0.1) var visibility_km := 30.0: set = _set_visibility
 
-@export_range(-35.0, 45.0, 0.1) var temperature_c := 30.0: set = _set_temperature
-@export_range(150.0, 450.0, 1.0) var ozone_du := 300.0: set = _set_ozone
+@export_range(0.0, 1.0, 0.001) var humidity := 0.35: 
+	set(v): humidity = v; _update_atmosphere()
+@export_range(0.0, 500.0, 1.0) var aqi := 35.0:
+	set(v): aqi = v; _update_atmosphere()
+@export_range(0.1, 50.0, 0.1) var visibility_km := 30.0:
+	set(v): visibility_km = v; _update_atmosphere()
 
-@export_range(1.0, 99999.0, 0.01) var camera_altitude := 0.5: set = _set_altitude
+@export_range(-35.0, 45.0, 0.1) var temperature_c := 30.0:
+	set(v): temperature_c = v; _update_atmosphere()
+@export_range(150.0, 450.0, 1.0) var ozone_du := 300.0:
+	set(v): ozone_du = v; _update_atmosphere()
+
+@export_range(1.0, 99999.0, 0.01) var camera_altitude := 0.5:
+	set(v): camera_altitude = v; _update_atmosphere()
+
+@export var day_length: float = 10
+@export var moon_length: float = 29.5
+@export_range(0.0, 1.0, 0.001) var time: float = 0.0:
+	set(v): time = v;
+@export_range(0.0, 1.0, 0.001) var moon_time: float = 0.0:
+	set(v): moon_time = v;
 
 @onready var sunLight := $SunLight # directional light of sun
 
@@ -37,6 +51,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if paused:
 		return
+	_update_clock(delta)
 	_resolve_sky_material()
 	_update_atmosphere()
 	_update_exposure()
@@ -50,10 +65,16 @@ func _resolve_sky_material() -> void:
 	if sky and sky.sky_material is ShaderMaterial:
 		mat = sky.sky_material
 
-func _update_clock() -> void:
-	return
+func _update_clock(delta: float) -> void:
+	var time_change = delta / day_length
+	time += time_change if time < 1.0 else -1.0
 
-# notes
+func _update_sun_moon(): 
+	var sun_angle = TAU * time
+	sunLight.rotation.x = sun_angle
+	var sun_tilt = 34.5
+	sunTilt.
+
 # should have exposure be ~20 around noon, but drop off as we reach sunset
 # will be implemented here in the script
 func _update_exposure() -> void:
@@ -61,20 +82,6 @@ func _update_exposure() -> void:
 	var how_horizon = clamp(sun_dir.dot(-top), 0.0, 1.0)
 	var exposure = lerp(10.0, 20.0, how_horizon)
 	mat.set_shader_parameter("exposure", exposure)
-
-@export_range(0, TAU) var x: float = 0.0: set = _set_x
-@export_range(0, TAU) var y: float = 0.0: set = _set_y
-@export_range(0, TAU) var z: float = 0.0: set = _set_z
-func _set_x(value): x = value; _rotate_sun(0, x)
-func _set_y(value): y = value; _rotate_sun(1, y)
-func _set_z(value): z = value; _rotate_sun(2, z)
-func _rotate_sun(axis: int, rad: float) -> void:
-	if axis == 0:
-		sunLight.rotation.x = rad
-	elif axis == 1:
-		sunLight.rotation.y = rad
-	elif axis == 2:
-		sunLight.rotation.z = rad
 
 func _update_atmosphere() -> void:
 	if not mat:
@@ -156,10 +163,3 @@ func _update_atmosphere() -> void:
 
 func _get_light_dir(light: DirectionalLight3D) -> Vector3:
 	return (-light.global_transform.basis.z).normalized()
-
-func _set_humidity(value): humidity = value; _update_atmosphere()
-func _set_aqi(value): aqi = value; _update_atmosphere()
-func _set_visibility(value): visibility_km = value; _update_atmosphere()
-func _set_temperature(value): temperature_c = value; _update_atmosphere()
-func _set_ozone(value): ozone_du = value; _update_atmosphere()
-func _set_altitude(value): camera_altitude = value; _update_atmosphere()

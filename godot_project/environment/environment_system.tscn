@@ -6,7 +6,7 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6u5e0"]
 shader = ExtResource("2_6u5e0")
 shader_parameter/camera_altitude = 0.5
-shader_parameter/exposure = 11.0
+shader_parameter/exposure = 10.0
 shader_parameter/base_sky_color = Color(0, 0.0039, 0.0275, 1)
 shader_parameter/atm_density = 0.7037037832418784
 shader_parameter/sun_strength = 300.0
@@ -99,10 +99,12 @@ transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="SunLight"]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0.5)
+visible = false
 mesh = SubResource("CylinderMesh_6u5e0")
 
 [node name="MoonLight" type="DirectionalLight3D" parent="."]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="MoonLight"]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0.5)
+visible = false
 mesh = SubResource("CylinderMesh_6u5e0")
