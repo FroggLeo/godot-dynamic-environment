@@ -84,3 +84,16 @@ func _process(_delta: float) -> void:
 			pause_v.text = "Pause"
 	if "time" in env:
 		time_v.text = str(time_to_24h(env.time))
+	if "humidity" in env:
+		humidity_v.text = str(env.humidity * 100) + "%"
+	if "aqi" in env:
+		aqi_v.text = str(env.aqi)
+	if "visibility_km" in env:
+		visibility_v.text = str(env.visibility_km) + "km"
+	if "temperature_c" in env:
+		temp_v.text = str(env.temperature_c) + "°C"
+	if "ozone_du" in env:
+		ozone_v.text = str(env.ozone_du)
+	if "camera_altitude" in env:
+		altitude_v.text = str(env.camera_altitude) + "km"
+	
