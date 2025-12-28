@@ -8,6 +8,9 @@ extends Node3D
 
 @export var paused: bool = false
 
+# midnight to noon to midnight 0..0.5..1
+@export_range(0.0, 1.0, 0.001) var time := 0.5: set = _set_time
+
 @export var environment: WorldEnvironment
 @export var sky_material: ShaderMaterial
 @export_range(0.0, 1.0, 0.001) var humidity := 0.35: set = _set_humidity
@@ -21,19 +24,23 @@ extends Node3D
 
 @onready var Sun := $SunLight # directional light of sun
 @onready var Moon := $MoonLight # directional light of moon
+
 # the sky shader material
 var mat: ShaderMaterial
+var top = Vector3(0.0, 1.0, 0.0)
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	_resolve_sky_material()
-	
+	_update_atmosphere()
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
 	if paused:
 		return
 	_resolve_sky_material()
+	_update_atmosphere()
+	_update_sun(delta)
 
 func _resolve_sky_material() -> void:
 	if sky_material:
@@ -44,10 +51,19 @@ func _resolve_sky_material() -> void:
 	if sky and sky.sky_material is ShaderMaterial:
 		mat = sky.sky_material
 
+func _update_clock() -> void:
+	return
+
 # notes
 # should have exposure be ~20 around noon, but drop off as we reach sunset
 # will be implemented here in the script
-
+func _update_sun(delta: float) -> void:
+	#var sun_dir = -Sun.transform.basis.z
+	#var how_horizon = clamp(sun_dir.dot(top), 0.0, 1.0)
+	Sun.rotation.y += delta
+	#var exposure = lerp(20.0, 10.0, how_horizon)
+	#mat.set_shader_parameter("exposure", exposure)
+	
 
 func _update_atmosphere() -> void:
 	if not mat:
@@ -130,6 +146,7 @@ func _update_atmosphere() -> void:
 func _get_light_dir(light: DirectionalLight3D) -> Vector3:
 	return (-light.global_transform.basis.z).normalized()
 
+func _set_time(value): time = value; _update_sun(0)
 func _set_humidity(value): humidity = value; _update_atmosphere()
 func _set_aqi(value): aqi = value; _update_atmosphere()
 func _set_visibility(value): visibility_km = value; _update_atmosphere()
