@@ -1,19 +1,21 @@
-[gd_scene load_steps=3 format=3 uid="uid://d3h1jqokqynrg"]
+[gd_scene load_steps=4 format=3 uid="uid://d3h1jqokqynrg"]
 
 [ext_resource type="PackedScene" uid="uid://cyshp33ssalay" path="res://environment/environment_system.tscn" id="1_6xmxd"]
 [ext_resource type="Script" uid="uid://dlovcesifmunm" path="res://world/player_controller/player.gd" id="2_tcf2h"]
+[ext_resource type="Script" uid="uid://d2qukl4f43f6i" path="res://world/player_controller/ui.gd" id="3_4717r"]
 
 [node name="world" type="Node3D"]
 
 [node name="EnvironmentSystem" parent="." instance=ExtResource("1_6xmxd")]
 transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0)
-time = 0.6405738259944276
-moon_time = 0.6339331792873543
+time = 0.7207263259950354
+moon_time = 0.23172404200032565
 
 [node name="Camera3D" type="Camera3D" parent="."]
 script = ExtResource("2_tcf2h")
 
 [node name="UI" type="CanvasLayer" parent="."]
+script = ExtResource("3_4717r")
 
 [node name="PanelContainer" type="PanelContainer" parent="UI"]
 anchors_preset = -1
@@ -40,11 +42,13 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="vpause" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/p"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Pause"
 
 [node name="pause" type="CheckButton" parent="UI/PanelContainer/MarginContainer/VBoxContainer/p"]
+unique_name_in_owner = true
 layout_mode = 2
 
 [node name="ti" type="HBoxContainer" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
@@ -56,14 +60,17 @@ text = "Time"
 horizontal_alignment = 1
 
 [node name="vtime" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/ti"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "uh oh"
 horizontal_alignment = 2
 
 [node name="time" type="HSlider" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
-max_value = 2400.0
+max_value = 1.0
+step = 0.001
 scrollable = false
 
 [node name="h" type="HBoxContainer" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
@@ -75,13 +82,18 @@ text = "Humidity (%)"
 horizontal_alignment = 1
 
 [node name="vhumidity" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/h"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "uh oh"
 horizontal_alignment = 2
 
 [node name="humidity" type="HSlider" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
+max_value = 1.0
+step = 0.01
+value = 0.35
 scrollable = false
 
 [node name="a" type="HBoxContainer" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
@@ -93,13 +105,17 @@ text = "AQI"
 horizontal_alignment = 1
 
 [node name="vaqi" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/a"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "uh oh"
 horizontal_alignment = 2
 
 [node name="aqi" type="HSlider" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
+max_value = 500.0
+value = 35.0
 scrollable = false
 
 [node name="t" type="HBoxContainer" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
@@ -111,13 +127,19 @@ text = "Temperature (c)"
 horizontal_alignment = 1
 
 [node name="vtemp" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/t"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "uh oh"
 horizontal_alignment = 2
 
 [node name="temp" type="HSlider" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
+min_value = -35.0
+max_value = 45.0
+step = 0.1
+value = 30.0
 scrollable = false
 
 [node name="v" type="HBoxContainer" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
@@ -129,13 +151,19 @@ text = "Visibility (km)"
 horizontal_alignment = 1
 
 [node name="vvis" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/v"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "uh oh"
 horizontal_alignment = 2
 
 [node name="vis" type="HSlider" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
+min_value = 0.1
+max_value = 50.0
+step = 0.1
+value = 30.0
 scrollable = false
 
 [node name="o" type="HBoxContainer" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
@@ -147,17 +175,19 @@ text = "Ozone (du)"
 horizontal_alignment = 1
 
 [node name="vozone" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/o"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "uh oh"
 horizontal_alignment = 2
 
 [node name="ozone" type="HSlider" parent="UI/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 min_value = 150.0
 max_value = 450.0
 step = 0.5
-value = 150.0
+value = 300.0
 scrollable = false
 
 [node name="PanelContainer2" type="PanelContainer" parent="UI"]
@@ -181,9 +211,10 @@ layout_mode = 2
 
 [node name="laltitude" type="Label" parent="UI/PanelContainer2/MarginContainer/a"]
 layout_mode = 2
-text = "Altitude (m)"
+text = "Altitude (m) "
 
-[node name="HSlider" type="HSlider" parent="UI/PanelContainer2/MarginContainer/a"]
+[node name="altitude" type="HSlider" parent="UI/PanelContainer2/MarginContainer/a"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -191,6 +222,7 @@ max_value = 99999.0
 step = 0.1
 
 [node name="valtitude" type="Label" parent="UI/PanelContainer2/MarginContainer/a"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 text = "uh oh"
