@@ -21,7 +21,7 @@ Real time physics based sky and atmosphere for Godot!
 * .. and more!
 
 ## Installation Instructions
-You have three options in terms of playing the demo:
+You have three options in terms of playing the game:
 
 1. **Play on Itch.io**
     * Go to my itch.io page for this game: https://froggleo.itch.io/godot-dynamic-environment
@@ -71,4 +71,5 @@ Some code snippets I have used in my shader include information from:
 * [Wikipedia](https://www.wikipedia.org/)
 * [Godot Docs](https://docs.godotengine.org/en/stable/)
 * ...and the many more guides and forum posts from the community that taught me specific things and ideas
+
 This project was also made for [Hack Club](https://hackclub.com/) as a part of [Midnight](https://midnight.hackclub.com/)!
