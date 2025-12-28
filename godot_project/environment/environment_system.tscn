@@ -5,10 +5,10 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6u5e0"]
 shader = ExtResource("2_6u5e0")
-shader_parameter/camera_altitude = 1.0
+shader_parameter/camera_altitude = 0.5
 shader_parameter/exposure = 11.0
 shader_parameter/base_sky_color = Color(0, 0.0039, 0.0275, 1)
-shader_parameter/atm_density = 1.0
+shader_parameter/atm_density = 0.7037037832418784
 shader_parameter/sun_strength = 300.0
 shader_parameter/sun_size_deg = 2.0000000298024
 shader_parameter/sun_softness = 0.2
@@ -48,7 +48,7 @@ shader_parameter/ozone_scale_height = 7000.0
 shader_parameter/ozone_peak_altitude = 20000.0
 shader_parameter/enable_fog = true
 shader_parameter/fog_amount = 0.0
-shader_parameter/fog_horizon_power = 4.0
+shader_parameter/fog_horizon_power = 0.0
 shader_parameter/fog_density = 1.5
 shader_parameter/fog_color = Color(0.7708, 0.8118, 0.8314, 1)
 shader_parameter/view_ray_steps = 32
@@ -89,41 +89,20 @@ height = 1.0
 
 [node name="EnvironmentSystem" type="Node3D" node_paths=PackedStringArray("environment")]
 script = ExtResource("1_xq3th")
-paused = null
-time = null
 environment = NodePath("WorldEnvironment")
-humidity = null
-aqi = null
-visibility_km = null
-temperature_c = null
-ozone_du = null
-camera_altitude = null
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_xdsv0")
 
-[node name="SunPitch" type="Node3D" parent="."]
+[node name="SunLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0)
 
-[node name="SunYaw" type="Node3D" parent="SunPitch"]
-
-[node name="SunRoll" type="Node3D" parent="SunPitch/SunYaw"]
-
-[node name="SunLight" type="DirectionalLight3D" parent="SunPitch/SunYaw/SunRoll"]
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="SunPitch/SunYaw/SunRoll"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SunLight"]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0.5)
 mesh = SubResource("CylinderMesh_6u5e0")
-skeleton = NodePath("../SunLight")
 
-[node name="MoonPitch" type="Node3D" parent="."]
+[node name="MoonLight" type="DirectionalLight3D" parent="."]
 
-[node name="MoonYaw" type="Node3D" parent="MoonPitch"]
-
-[node name="MoonRoll" type="Node3D" parent="MoonPitch/MoonYaw"]
-
-[node name="MoonLight" type="DirectionalLight3D" parent="MoonPitch/MoonYaw/MoonRoll"]
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="MoonPitch/MoonYaw/MoonRoll"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="MoonLight"]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0.5)
 mesh = SubResource("CylinderMesh_6u5e0")
-skeleton = NodePath("../MoonLight")
