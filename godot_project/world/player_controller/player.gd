@@ -5,6 +5,7 @@ extends Camera3D
 var last_mouse_pos: Vector2
 
 func _ready() -> void:
+	print("camera readying..")
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -19,5 +20,5 @@ func _unhandled_input(event: InputEvent) -> void:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		Input.warp_mouse(last_mouse_pos)
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	pass

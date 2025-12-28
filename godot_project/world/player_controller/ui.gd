@@ -4,6 +4,9 @@ extends CanvasLayer
 
 @onready var reset := %reset
 
+@onready var popup_box := %popup
+@onready var popup_button := %popupbutton
+
 @onready var pause := %pause # the ui toggle/slider itself
 @onready var pause_v := %vpause # the value to be displayed
 var pause_d # the default value
@@ -42,8 +45,9 @@ var altitude_d
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	print("ui system readying..")
 	if !env: 
-		print("noooooooo")
+		print("uh oh, ui not working")
 		return
 	if "paused" in env:
 		print("pause good")
@@ -91,6 +95,7 @@ func _ready() -> void:
 		altitude.value = altitude_d
 		altitude.value_changed.connect(func(v): env.camera_altitude = v)
 	reset.pressed.connect(_reset_all_values)
+	popup_button.pressed.connect(_close_popup)
 
 func _reset_all_values():
 	pause.button_pressed = pause_d
@@ -104,6 +109,9 @@ func _reset_all_values():
 	temp.value = temp_d
 	ozone.value = ozone_d
 	altitude.value = altitude_d
+
+func _close_popup():
+	popup_box.visible = false
 
 func _time_slider_update(v: float):
 	env.time = v
@@ -144,5 +152,13 @@ func _process(_delta: float) -> void:
 		temp_v.text = str(env.temperature_c) + "°C"
 	if "ozone_du" in env:
 		ozone_v.text = str(env.ozone_du) + " DU"
+	if Input.is_action_just_pressed("go_up"):
+		altitude.value += 10.0;
+		altitude.value = clamp(altitude.value ,altitude.min_value, altitude.max_value)
+	elif Input.is_action_just_pressed("go_down"):
+		altitude.value -= 10.0;
+		altitude.value = clamp(altitude.value ,altitude.min_value, altitude.max_value)
 	if "camera_altitude" in env:
 		altitude_v.text = str(env.camera_altitude) + "m"
+	if Input.is_action_just_pressed("pause"):
+		pause.button_pressed = false if pause.button_pressed else true

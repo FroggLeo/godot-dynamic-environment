@@ -1,12 +1,7 @@
 #@tool
 extends Node3D
 
-# +x / -x
-# east / west 
-# +z / -z
-# north / south
-
-@export var paused: bool = true
+@export var paused: bool = false
 
 @export var environment: WorldEnvironment
 @export var sky_material: ShaderMaterial
@@ -43,7 +38,7 @@ var top = Vector3(0.0, 1.0, 0.0)
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	print("readying..")
+	print("environment system readying..")
 	time = 0.5
 	moon_time = 0.5
 	sunLight.rotation = Vector3(0,0,0)
