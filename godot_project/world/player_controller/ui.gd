@@ -65,6 +65,13 @@ func _ready() -> void:
 		altitude.value_changed.connect(func(v): env.camera_altitude = v)
 	
 
+# quick custom clock function
+func time_to_24h(envtime: float) -> String:
+	var total_minutes := int(envtime * 24 * 60 + 18 * 60) % (24 * 60)
+	var hours := int(total_minutes / 60.0)
+	var minutes := total_minutes % 60
+	return str(hours) + ":" + str(minutes)
+
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
 	if "time" in env and "paused" in env:
@@ -75,3 +82,5 @@ func _process(_delta: float) -> void:
 			time.editable = false
 			time.value = env.time
 			pause_v.text = "Pause"
+	if "time" in env:
+		time_v.text = str(time_to_24h(env.time))
