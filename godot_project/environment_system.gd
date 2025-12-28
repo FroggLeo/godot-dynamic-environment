@@ -6,7 +6,7 @@ extends Node3D
 # +z / -z
 # north / south
 
-@export var paused: bool = false
+@export var paused: bool = true
 
 @export var environment: WorldEnvironment
 @export var sky_material: ShaderMaterial
@@ -53,9 +53,8 @@ func _ready() -> void:
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
-	if paused:
-		return
-	_update_clock(delta)
+	if !paused:
+		_update_clock(delta)
 	_resolve_sky_material()
 	_update_sun_moon()
 	_update_atmosphere()
