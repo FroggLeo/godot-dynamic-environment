@@ -33,6 +33,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if paused:
 		return
+	_resolve_sky_material()
 
 func _resolve_sky_material() -> void:
 	if sky_material:
@@ -47,6 +48,7 @@ func _resolve_sky_material() -> void:
 # should have exposure be ~20 around noon, but drop off as we reach sunset
 # will be implemented here in the script
 
+
 func _update_atmosphere() -> void:
 	if not mat:
 		return
@@ -54,8 +56,8 @@ func _update_atmosphere() -> void:
 	var hu: float = clamp(humidity, 0, 1)
 	# 0..500 to 0..1
 	var aq: float = clamp(aqi / 500, 0, 1)
-	# 0..50 to 0..1
-	var vi: float = clamp(visibility_km / 50, 0, 1)
+	# 0..50 to 1..0
+	var vi: float = clamp((50 - visibility_km) / 50, 0, 1)
 	# -35..45 to 0..1
 	var te: float = clamp((temperature_c + 35) / 80, 0, 1)
 	# 150..450 to 0..1
@@ -77,43 +79,43 @@ func _update_atmosphere() -> void:
 	# low ~ 0.9, 0.49
 	var hu_curve := smoothstep(0.3, 1.0, hu)
 	# visibility is just fog
-	var vi_curve := vi
+	var vi_curve := smoothstep(0.7, 1.0, vi)
 	# ozone
 	# well, affects ozone
-	var oz_curve := pow(oz, 1.2)
+	var oz_curve := pow(oz, 10.0)
 	# affected mostly by aqi and a little by temp
-	var r_aq := lerp(1, 8, aq_curve)
-	var r_te := lerp(0.9, 1.2, te_curve)
+	var r_aq: float = lerp(1.0, 8.0, aq_curve)
+	var r_te: float = lerp(0.9, 1.2, te_curve)
 	var rayleigh_strength: float = r_aq * r_te
 	rayleigh_strength = clamp(rayleigh_strength, 0.3, 8.0)
 	# affected mostly by aqi and temp, a bit humidity
-	var m_aq := lerp(1, 8, aq_curve)
-	var m_te := lerp(0.4, 8, te_curve)
-	var m_hu := lerp(0.9, 2, hu_curve)
+	var m_aq: float = lerp(1.0, 8.0, aq_curve)
+	var m_te: float = lerp(0.4, 8.0, te_curve)
+	var m_hu: float = lerp(0.9, 2.0, hu_curve)
 	var mie_strength: float = m_aq * m_te * m_hu
 	rayleigh_strength = clamp(rayleigh_strength, 0.3, 8.0)
 	# affected by aqi, temp, humidity
-	var g_aq := lerp(0.87/0.85, 0.80/0.85, aq_curve)
-	var g_te := lerp(0.89/0.85, 0.60/0.85, te_curve)
-	var g_hu := lerp(0.49/0.85, 0.70/0.85, hu_curve)
+	var g_aq: float = lerp(0.87/0.85, 0.80/0.85, aq_curve)
+	var g_te: float = lerp(0.89/0.85, 0.60/0.85, te_curve)
+	var g_hu: float = lerp(0.49/0.85, 0.70/0.85, hu_curve)
 	var mie_g: float = 0.85 * g_aq * g_te * g_hu
 	mie_g = clamp(mie_g, 0.48, 0.92)
 	# affected mostly by ozone, then temp
-	var o_te := lerp(1.0, 4.0, te_curve)
-	var o_oz := lerp(0.2, 5.0, oz_curve)
+	var o_te: float = lerp(1.0, 4.0, te_curve)
+	var o_oz: float = lerp(0.2, 5.0, oz_curve)
 	var ozone_strength: float = o_te * o_oz
 	ozone_strength = clamp(ozone_strength, 0.2, 5.0)
 	# affected by aqi
-	var d_aq := lerp(1.0, 3.0, aq_curve)
-	var d_te := lerp(1.5, 0.5, te_curve)
+	var d_aq: float = lerp(1.0, 3.0, aq_curve)
+	var d_te: float = lerp(1.5, 0.5, te_curve)
 	var atm_density: float = d_aq * d_te
 	# affected by visibility
-	var fa_vi := lerp(0.0, 0.6, vi_curve)
-	var fp_vi := lerp(0.0, 6.0, vi_curve)
-	var fd_vi := lerp(1.5, 4.0, vi_curve)
-	var fog_amount: float = 
-	var fog_power: float = 
-	var fog_density: float = 
+	var fa_vi: float = lerp(0.0, 0.6, vi_curve)
+	var fp_vi: float = lerp(0.0, 6.0, vi_curve)
+	var fd_vi: float = lerp(1.5, 4.0, vi_curve)
+	var fog_amount: float = fa_vi
+	var fog_power: float = fp_vi
+	var fog_density: float = fd_vi
 	# update shader now
 	mat.set_shader_parameter("camera_altitude", camera_altitude)
 	mat.set_shader_parameter("rayleigh_strength", rayleigh_strength)

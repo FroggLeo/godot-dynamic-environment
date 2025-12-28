@@ -5,10 +5,10 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6u5e0"]
 shader = ExtResource("2_6u5e0")
-shader_parameter/camera_altitude = 1.0
+shader_parameter/camera_altitude = 0.5
 shader_parameter/exposure = 20.0
 shader_parameter/base_sky_color = Color(0, 0.0039, 0.0275, 1)
-shader_parameter/atm_density = 0.499999988824
+shader_parameter/atm_density = 0.7037037832418784
 shader_parameter/sun_strength = 300.0
 shader_parameter/sun_size_deg = 2.0000000298024
 shader_parameter/sun_softness = 0.2
@@ -38,18 +38,18 @@ shader_parameter/stars_color = Color(1, 0.9725, 0.9059, 1)
 shader_parameter/stars_color_variation = 0.3
 shader_parameter/stars_moon_fade = 0.6
 shader_parameter/stars_seed = 67.6767
-shader_parameter/rayleigh_strength = 1.0
+shader_parameter/rayleigh_strength = 1.2381002106038468
 shader_parameter/rayleigh_scale_height = 8300.0
-shader_parameter/mie_strength = 1.0
+shader_parameter/mie_strength = 6.519773497310114
 shader_parameter/mie_scale_height = 1200.0
-shader_parameter/mie_g = 0.85
-shader_parameter/ozone_strength = 1.0
+shader_parameter/mie_g = 0.48
+shader_parameter/ozone_strength = 5.0
 shader_parameter/ozone_scale_height = 7000.0
 shader_parameter/ozone_peak_altitude = 20000.0
 shader_parameter/enable_fog = true
-shader_parameter/fog_amount = 0.6150000292125
-shader_parameter/fog_horizon_power = 0.0
-shader_parameter/fog_density = 1.5
+shader_parameter/fog_amount = 0.36
+shader_parameter/fog_horizon_power = 3.5999999999999996
+shader_parameter/fog_density = 3.0
 shader_parameter/fog_color = Color(0.7708, 0.8118, 0.8314, 1)
 shader_parameter/view_ray_steps = 32
 shader_parameter/sun_ray_steps = 3
@@ -84,14 +84,13 @@ sky = SubResource("Sky_i61be")
 
 [node name="EnvironmentSystem" type="Node3D" node_paths=PackedStringArray("environment")]
 script = ExtResource("1_xq3th")
-paused = true
 environment = NodePath("WorldEnvironment")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_xdsv0")
 
 [node name="SunLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -0.99231035, 0.12377466, 0, -0.12377466, -0.99231035, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, -0.78105205, 0.62446594, 0, -0.62446594, -0.78105205, 0, 0, 0)
 
 [node name="MoonLight" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.834646, 0.5507867, 0, -0.5507867, 0.834646, 0, 0, 0)
