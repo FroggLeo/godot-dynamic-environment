@@ -8,6 +8,9 @@ extends CanvasLayer
 @onready var time := %time
 @onready var time_v := %vtime
 
+@onready var daylen := %dayl
+@onready var daylen_v := %vdayl
+
 @onready var humidity := %humidity
 @onready var humidity_v := %vhumidity
 
@@ -38,7 +41,11 @@ func _ready() -> void:
 	if "time" in env:
 		print("time good")
 		time.value = env.time
-		time.value_changed.connect(func(v): env.time = v)
+		time.value_changed.connect(_time_slider_update)
+	if "day_length" in env:
+		print("daylength good")
+		daylen.value = env.day_length
+		daylen.value_changed.connect(func(v): env.day_length = v)
 	if "humidity" in env:
 		print("humidity good")
 		humidity.value = env.humidity
@@ -65,6 +72,9 @@ func _ready() -> void:
 		altitude.value_changed.connect(func(v): env.camera_altitude = v)
 	
 
+func _time_slider_update(v: float):
+	env.time = v
+
 # quick custom clock function
 func time_to_24h(envtime: float) -> String:
 	var total_minutes := int(envtime * 24 * 60 + 18 * 60) % (24 * 60)
@@ -76,14 +86,21 @@ func time_to_24h(envtime: float) -> String:
 func _process(_delta: float) -> void:
 	if "time" in env and "paused" in env:
 		if pause.button_pressed:
+			if !time.value_changed.is_connected(_time_slider_update):
+				time.value_changed.connect(_time_slider_update)
 			time.editable = true
 			pause_v.text = "Paused"
 		else:
+			if time.value_changed.is_connected(_time_slider_update):
+				# disconnect the slider so that it doesn't do weird feedback
+				time.value_changed.disconnect(_time_slider_update)
 			time.editable = false
 			time.value = env.time
 			pause_v.text = "Pause"
 	if "time" in env:
 		time_v.text = str(time_to_24h(env.time))
+	if "day_length" in env:
+		daylen_v.text = str(env.day_length) + "s"
 	if "humidity" in env:
 		humidity_v.text = str(env.humidity * 100) + "%"
 	if "aqi" in env:
@@ -95,5 +112,5 @@ func _process(_delta: float) -> void:
 	if "ozone_du" in env:
 		ozone_v.text = str(env.ozone_du)
 	if "camera_altitude" in env:
-		altitude_v.text = str(env.camera_altitude) + "km"
+		altitude_v.text = str(env.camera_altitude) + "m"
 	

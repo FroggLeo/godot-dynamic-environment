@@ -79,7 +79,7 @@ layout_mode = 2
 
 [node name="ldayl" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/d"]
 layout_mode = 2
-text = "Day Length (s)"
+text = "Day Length"
 horizontal_alignment = 1
 
 [node name="vdayl" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/d"]
@@ -93,7 +93,7 @@ horizontal_alignment = 2
 unique_name_in_owner = true
 layout_mode = 2
 min_value = 1.0
-max_value = 600.0
+max_value = 1200.0
 step = 0.1
 value = 20.0
 scrollable = false
@@ -103,7 +103,7 @@ layout_mode = 2
 
 [node name="lhumidity" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/h"]
 layout_mode = 2
-text = "Humidity (%)"
+text = "Humidity"
 horizontal_alignment = 1
 
 [node name="vhumidity" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/h"]
@@ -148,7 +148,7 @@ layout_mode = 2
 
 [node name="ltemp" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/t"]
 layout_mode = 2
-text = "Temperature (c)"
+text = "Temperature"
 horizontal_alignment = 1
 
 [node name="vtemp" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/t"]
@@ -172,7 +172,7 @@ layout_mode = 2
 
 [node name="lvis" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/v"]
 layout_mode = 2
-text = "Visibility (km)"
+text = "Visibility"
 horizontal_alignment = 1
 
 [node name="vvis" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/v"]
@@ -196,7 +196,7 @@ layout_mode = 2
 
 [node name="lozone" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/o"]
 layout_mode = 2
-text = "Ozone (du)"
+text = "Ozone"
 horizontal_alignment = 1
 
 [node name="vozone" type="Label" parent="UI/PanelContainer/MarginContainer/VBoxContainer/o"]
@@ -240,7 +240,7 @@ layout_mode = 2
 
 [node name="laltitude" type="Label" parent="UI/PanelContainer2/MarginContainer/a"]
 layout_mode = 2
-text = "Altitude (m) "
+text = "Altitude "
 
 [node name="altitude" type="HSlider" parent="UI/PanelContainer2/MarginContainer/a"]
 unique_name_in_owner = true
@@ -254,7 +254,7 @@ value = 1.0
 
 [node name="valtitude" type="Label" parent="UI/PanelContainer2/MarginContainer/a"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 0)
+custom_minimum_size = Vector2(85, 0)
 layout_mode = 2
-text = "uh oh"
+text = "99999.0m"
 horizontal_alignment = 2

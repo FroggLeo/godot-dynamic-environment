@@ -23,7 +23,7 @@ extends Node3D
 @export_range(150.0, 450.0, 1.0) var ozone_du := 300.0:
 	set(v): ozone_du = v; _update_atmosphere()
 
-@export_range(1.0, 99999.0, 0.01) var camera_altitude := 0.5:
+@export_range(1.0, 99999.0, 0.01) var camera_altitude := 1.0:
 	set(v): camera_altitude = v; _update_atmosphere()
 
 @export var day_length: float = 20.0
